@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>FORGE — アプリを作るアプリ</title>
+<style>
+:root{
+  --bg:#0f0f13;--bg2:#17171e;--bg3:#1e1e28;
+  --card:#1e1e28;--bor:rgba(255,255,255,.08);--bor2:rgba(255,255,255,.14);
+  --accent:#7c3aed;--accent2:#a855f7;--accent-xl:rgba(124,58,237,.15);
+  --green:#10b981;--green2:#34d399;--green-xl:rgba(16,185,129,.12);
+  --red:#ef4444;--gold:#f59e0b;
+  --txt:#f0f0f8;--txt2:#a0a0c0;--txt3:#606080;
+  --r:12px;--r2:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--txt);font-family:'Hiragino Sans','Noto Sans JP',sans-serif;min-height:100vh;overflow-x:hidden;}
+
+/* ── スプラッシュ ── */
+#splash{position:fixed;inset:0;background:linear-gradient(135deg,#0a0014,#12002a,#0f0f13);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .8s;}
+#splash.hide{opacity:0;pointer-events:none;}
+.sp-logo{font-size:48px;margin-bottom:12px;animation:forge-pulse 2s ease-in-out infinite;}
+@keyframes forge-pulse{0%,100%{transform:scale(1);filter:drop-shadow(0 0 8px rgba(124,58,237,.6));}50%{transform:scale(1.06);filter:drop-shadow(0 0 24px rgba(168,85,247,.9));}}
+.sp-title{font-size:28px;font-weight:900;letter-spacing:8px;background:linear-gradient(90deg,#a855f7,#7c3aed,#5b21b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.sp-sub{font-size:10px;letter-spacing:4px;color:var(--txt3);margin-top:8px;}
+.sp-bar{width:200px;height:2px;background:rgba(255,255,255,.08);border-radius:1px;margin-top:32px;overflow:hidden;}
+.sp-fill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:1px;animation:spf 2s ease forwards;}
+@keyframes spf{to{width:100%;}}
+
+/* ── ログイン ── */
+#login-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;z-index:8888;}
+.login-card{width:100%;max-width:360px;background:var(--bg2);border:1.5px solid var(--bor2);border-radius:16px;padding:28px 24px;}
+.login-title{font-size:20px;font-weight:900;text-align:center;margin-bottom:6px;background:linear-gradient(90deg,var(--accent2),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.login-sub{font-size:11px;color:var(--txt3);text-align:center;margin-bottom:22px;}
+.l-inp{width:100%;padding:12px 14px;background:var(--bg3);border:1.5px solid var(--bor);border-radius:var(--r2);color:var(--txt);font-size:14px;font-family:inherit;outline:none;margin-bottom:10px;}
+.l-inp:focus{border-color:var(--accent);}
+.l-btn{width:100%;padding:13px;border-radius:var(--r2);border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:14px;font-weight:800;cursor:pointer;margin-top:4px;}
+.l-err{font-size:11px;color:var(--red);text-align:center;margin-top:8px;min-height:16px;}
+
+/* ── ナビ ── */
+nav{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--bor);display:flex;z-index:100;max-width:600px;margin:0 auto;}
+.nb{flex:1;padding:10px 0 8px;border:none;background:none;color:var(--txt3);font-size:9px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;transition:.15s;}
+.nb .ic{font-size:20px;display:block;}
+.nb.active{color:var(--accent2);}
+
+/* ── レイアウト ── */
+.app{max-width:600px;margin:0 auto;padding:0 0 80px;}
+.hdr{padding:20px 16px 12px;display:flex;align-items:center;justify-content:space-between;}
+.hdr-title{font-size:18px;font-weight:900;background:linear-gradient(90deg,var(--accent2),#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.sec{display:none;padding:0 16px;}
+.sec.active{display:block;}
+
+/* ── カード ── */
+.card{background:var(--card);border:1.5px solid var(--bor);border-radius:var(--r);padding:16px;margin-bottom:12px;}
+.card-label{font-size:10px;font-weight:700;color:var(--txt3);letter-spacing:.5px;margin-bottom:8px;}
+
+/* ── テキストエリア ── */
+.forge-ta{width:100%;padding:13px 14px;background:var(--bg3);border:1.5px solid var(--bor);border-radius:var(--r2);color:var(--txt);font-size:13px;font-family:inherit;resize:none;outline:none;line-height:1.7;min-height:100px;}
+.forge-ta:focus{border-color:var(--accent);}
+
+/* ── プリセット ── */
+.preset-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px;}
+.preset-chip{padding:8px 4px;border-radius:var(--r2);border:1.5px solid var(--bor);background:var(--bg3);color:var(--txt2);font-size:10px;font-weight:700;cursor:pointer;text-align:center;transition:.15s;}
+.preset-chip:active{background:var(--accent-xl);border-color:var(--accent);color:var(--accent2);}
+
+/* ── オプション ── */
+.opt-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.opt-item label{font-size:10px;color:var(--txt3);display:block;margin-bottom:4px;}
+.opt-sel{width:100%;padding:9px 10px;background:var(--bg3);border:1.5px solid var(--bor);border-radius:var(--r2);color:var(--txt);font-size:11px;font-family:inherit;outline:none;-webkit-appearance:none;}
+
+/* ── AIトグル ── */
+.ai-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--accent-xl);border:1.5px solid rgba(124,58,237,.3);border-radius:var(--r2);margin-bottom:12px;}
+.toggle-switch{width:44px;height:24px;background:var(--bg3);border-radius:12px;border:1.5px solid var(--bor);cursor:pointer;position:relative;transition:.2s;}
+.toggle-switch.on{background:linear-gradient(90deg,var(--accent),var(--accent2));border-color:transparent;}
+.toggle-knob{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 4px rgba(0,0,0,.4);}
+.toggle-switch.on .toggle-knob{left:20px;}
+
+/* ── 生成ボタン ── */
+.forge-btn{width:100%;padding:15px;border-radius:var(--r);border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:15px;font-weight:900;cursor:pointer;letter-spacing:1px;position:relative;overflow:hidden;transition:.2s;}
+.forge-btn:active{transform:scale(.98);}
+.forge-btn:disabled{opacity:.5;cursor:not-allowed;}
+.forge-btn .sparks{position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);transform:translateX(-100%);transition:none;}
+.forge-btn.loading .sparks{animation:sweep 1.5s linear infinite;}
+@keyframes sweep{to{transform:translateX(300%);}}
+
+/* ── プログレス ── */
+.progress-wrap{margin-bottom:12px;display:none;}
+.progress-bar{height:3px;background:var(--bg3);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;transition:width .4s;}
+.progress-txt{font-size:11px;color:var(--accent2);margin-top:6px;text-align:center;font-weight:700;}
+
+/* ── 結果 ── */
+.result-wrap{display:none;}
+.result-meta{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.result-title{font-size:15px;font-weight:800;color:var(--txt);}
+.result-desc{font-size:11px;color:var(--txt2);margin-bottom:10px;line-height:1.7;}
+.iframe-wrap{width:100%;border-radius:var(--r);overflow:hidden;border:1.5px solid var(--bor2);background:#fff;position:relative;}
+#app-iframe{width:100%;height:480px;border:none;display:block;}
+.iframe-expand{position:absolute;top:8px;right:8px;padding:5px 10px;border-radius:6px;border:none;background:rgba(0,0,0,.5);color:#fff;font-size:10px;cursor:pointer;backdrop-filter:blur(4px);}
+.result-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px;}
+/* エラーバナー */
+.err-banner{border-radius:var(--r2);padding:12px 14px;margin-top:8px;display:none;}
+.err-banner.show{display:block;}
+.err-banner.type-err{background:rgba(239,68,68,.08);border:1.5px solid rgba(239,68,68,.3);}
+.err-banner.type-ok{background:var(--green-xl);border:1.5px solid rgba(16,185,129,.3);}
+.err-banner.type-visual{background:var(--accent-xl);border:1.5px solid rgba(124,58,237,.3);}
+/* iframe状態バー */
+.iframe-status{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--bg3);border-top:1px solid var(--bor);font-size:10px;}
+.status-dot{width:7px;height:7px;border-radius:50%;margin-right:5px;}
+.status-dot.ok{background:var(--green);}
+.status-dot.err{background:var(--red);}
+.status-dot.checking{background:var(--gold);animation:blink .8s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+.act-btn{padding:10px 6px;border-radius:var(--r2);border:1.5px solid var(--bor2);background:var(--bg3);color:var(--txt2);font-size:11px;font-weight:700;cursor:pointer;text-align:center;transition:.15s;}
+.act-btn:active{background:var(--bg2);}
+.act-btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent;color:#fff;}
+.act-btn.green{background:linear-gradient(135deg,var(--green),#059669);border-color:transparent;color:#fff;}
+
+/* ── 修正依頼モーダル ── */
+#fix-modal{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;display:none;align-items:flex-end;justify-content:center;}
+#fix-modal.show{display:flex;}
+.fix-panel{width:100%;max-width:600px;background:var(--bg2);border-radius:16px 16px 0 0;border-top:2px solid var(--accent);padding:20px 16px;padding-bottom:calc(20px + env(safe-area-inset-bottom));}
+.fix-ta{width:100%;padding:12px;background:var(--bg3);border:1.5px solid var(--bor);border-radius:var(--r2);color:var(--txt);font-size:13px;font-family:inherit;resize:none;outline:none;margin:10px 0;}
+.fix-ta:focus{border-color:var(--accent);}
+
+/* ── 履歴 ── */
+.history-item{background:var(--card);border:1.5px solid var(--bor);border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer;transition:.15s;}
+.history-item:active{background:var(--bg3);}
+.hi-title{font-size:13px;font-weight:800;color:var(--txt);margin-bottom:4px;}
+.hi-desc{font-size:11px;color:var(--txt2);margin-bottom:6px;line-height:1.6;}
+.hi-meta{font-size:10px;color:var(--txt3);display:flex;align-items:center;gap:8px;}
+.hi-ai-badge{padding:2px 7px;border-radius:6px;background:var(--accent-xl);color:var(--accent2);font-size:9px;font-weight:700;}
+.hi-actions{display:flex;gap:6px;margin-top:8px;}
+.hi-btn{padding:5px 12px;border-radius:6px;border:1.5px solid var(--bor2);background:var(--bg3);color:var(--txt2);font-size:10px;cursor:pointer;}
+.hi-btn.del{border-color:rgba(239,68,68,.3);color:var(--red);}
+
+/* ── お気に入り ── */
+.empty-state{text-align:center;padding:48px 16px;color:var(--txt3);}
+.empty-icon{font-size:40px;margin-bottom:12px;}
+
+/* ── フルスクリーン ── */
+#fullscreen-modal{position:fixed;inset:0;background:#000;z-index:600;display:none;}
+#fullscreen-modal.show{display:block;}
+#fs-iframe{width:100%;height:100%;border:none;}
+.fs-close{position:fixed;top:16px;right:16px;z-index:601;padding:8px 14px;border-radius:8px;border:none;background:rgba(0,0,0,.7);color:#fff;font-size:12px;font-weight:800;cursor:pointer;backdrop-filter:blur(4px);}
+
+/* ── トースト ── */
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1.5px solid var(--bor2);color:var(--txt);padding:10px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:9999;pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap;}
+#toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<!-- スプラッシュ -->
+<div id="splash">
+  <div class="sp-logo">⚡</div>
+  <div class="sp-title">FORGE</div>
+  <div class="sp-sub">アプリを作るアプリ</div>
+  <div class="sp-bar"><div class="sp-fill"></div></div>
+</div>
+
+<!-- ログイン -->
+<div id="login-screen" style="display:none;">
+  <div class="login-card">
+    <div class="login-title">⚡ FORGE</div>
+    <div class="login-sub">管理者が発行したアカウントでログイン</div>
+    <input class="l-inp" id="l-email" type="email" placeholder="メールアドレス" autocomplete="email">
+    <input class="l-inp" id="l-pass" type="password" placeholder="パスワード" autocomplete="current-password">
+    <button class="l-btn" onclick="doLogin()">ログイン</button>
+    <div class="l-err" id="l-err"></div>
+  </div>
+</div>
+
+<!-- ERROR LAB モーダル -->
+<div id="errorlab-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:700;flex-direction:column;">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--bor);">
+    <div style="font-size:13px;font-weight:800;color:var(--red);">🔬 ERROR LAB</div>
+    <button onclick="closeErrorLab()" style="padding:6px 14px;border-radius:var(--r2);border:1.5px solid var(--bor2);background:transparent;color:var(--txt2);font-size:11px;cursor:pointer;">✕ 閉じる</button>
+  </div>
+  <iframe id="errorlab-iframe"
+    src=""
+    style="flex:1;border:none;width:100%;height:100%;"
+    sandbox="allow-scripts allow-same-origin allow-forms allow-popups">
+  </iframe>
+</div>
+
+<!-- 管理パネル -->
+<div id="adminPanel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9998;align-items:center;justify-content:center;padding:18px;">
+  <div style="background:var(--bg2);border:1.5px solid var(--bor2);border-radius:16px;padding:22px;width:min(420px,100%);max-height:90dvh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div style="font-size:15px;font-weight:800;color:var(--txt);">👥 ユーザー管理</div>
+      <button onclick="closeAdmin()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--txt3);">✕</button>
+    </div>
+    <div style="background:var(--bg3);border-radius:12px;padding:14px;margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--accent2);margin-bottom:10px;">➕ 新規ユーザー登録</div>
+      <div style="margin-bottom:8px;">
+        <div style="font-size:10px;color:var(--txt3);margin-bottom:4px;">メールアドレス</div>
+        <input type="email" id="nuEmail" placeholder="example@mail.com" class="l-inp" style="margin:0;">
+      </div>
+      <div style="margin-bottom:10px;">
+        <div style="font-size:10px;color:var(--txt3);margin-bottom:4px;">仮パスワード</div>
+        <div style="position:relative;">
+          <input type="text" id="nuPass" placeholder="例）Temp1234!" class="l-inp" style="margin:0;padding-right:80px;">
+          <button onclick="genPass()" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:var(--accent);color:#fff;border:none;border-radius:6px;padding:4px 9px;font-size:10px;cursor:pointer;">自動生成</button>
+        </div>
+      </div>
+      <div id="nuErr" style="color:var(--red);font-size:11px;min-height:14px;margin-bottom:8px;"></div>
+      <button onclick="addUser()" id="addUserBtn" style="width:100%;padding:11px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:var(--r2);font-size:13px;font-weight:700;cursor:pointer;">登録する</button>
+    </div>
+    <div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div style="font-size:12px;font-weight:700;color:var(--txt);">📋 登録ユーザー</div>
+        <button onclick="loadUsers()" style="background:var(--bg3);border:1.5px solid var(--bor);border-radius:6px;padding:3px 9px;font-size:11px;cursor:pointer;color:var(--txt2);">🔄 更新</button>
+      </div>
+      <div id="userList" style="font-size:12px;color:var(--txt3);">読み込み中...</div>
+    </div>
+  </div>
+</div>
+
+<!-- メインアプリ -->
+<div id="main-app" style="display:none;">
+  <div class="app">
+
+    <!-- ヘッダー -->
+    <div class="hdr">
+      <div class="hdr-title">⚡ FORGE</div>
+      <button onclick="doLogout()" style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--bor);background:transparent;color:var(--txt3);font-size:11px;cursor:pointer;">ログアウト</button>
+    </div>
+
+    <!-- ════ 作るタブ ════ -->
+    <div class="sec active" id="sec-create">
+
+      <!-- 入力 -->
+      <div class="card">
+        <div class="card-label">どんなアプリを作りますか？</div>
+        <textarea class="forge-ta" id="forge-input" rows="4" placeholder="例：シンプルなタイマーアプリ。25分と5分を切り替えられる。完了時に音が鳴る。かわいいデザイン。"></textarea>
+      </div>
+
+      <!-- プリセット -->
+      <div class="card">
+        <div class="card-label">テンプレートから選ぶ</div>
+        <div class="preset-grid">
+          <div class="preset-chip" onclick="setPreset('timer')">⏱ タイマー</div>
+          <div class="preset-chip" onclick="setPreset('calc')">🧮 計算機</div>
+          <div class="preset-chip" onclick="setPreset('memo')">📝 メモ帳</div>
+          <div class="preset-chip" onclick="setPreset('quiz')">🎯 クイズ</div>
+          <div class="preset-chip" onclick="setPreset('checklist')">✅ チェックリスト</div>
+          <div class="preset-chip" onclick="setPreset('chat')">💬 AIチャット</div>
+          <div class="preset-chip" onclick="setPreset('daiku')">🔨 建設計算</div>
+          <div class="preset-chip" onclick="setPreset('diagnosis')">🔍 AI診断</div>
+          <div class="preset-chip" onclick="setPreset('game')">🎮 ゲーム</div>
+        </div>
+      </div>
+
+      <!-- オプション -->
+      <div class="card">
+        <div class="card-label">オプション</div>
+        <div class="opt-row">
+          <div class="opt-item">
+            <label>デザインテーマ</label>
+            <select class="opt-sel" id="opt-theme">
+              <option value="light">ライト</option>
+              <option value="dark">ダーク</option>
+              <option value="colorful">カラフル</option>
+              <option value="minimal">ミニマル</option>
+            </select>
+          </div>
+          <div class="opt-item">
+            <label>レイアウト</label>
+            <select class="opt-sel" id="opt-layout">
+              <option value="mobile">モバイル優先</option>
+              <option value="both">PC・スマホ両対応</option>
+            </select>
+          </div>
+        </div>
+        <!-- AI搭載トグル -->
+        <div class="ai-toggle-row">
+          <div>
+            <div style="font-size:12px;font-weight:800;color:var(--accent2);">⚡ Gemini AI を搭載する</div>
+            <div style="font-size:10px;color:var(--txt3);margin-top:2px;">ON：生成アプリにAIチャット・診断機能を追加できる</div>
+          </div>
+          <div class="toggle-switch" id="ai-toggle" onclick="toggleAI()">
+            <div class="toggle-knob"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 生成ボタン -->
+      <button class="forge-btn" id="forge-btn" onclick="startForge()">
+        <div class="sparks"></div>
+        ⚡ アプリを生成する
+      </button>
+
+      <!-- プログレス -->
+      <div class="progress-wrap" id="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        <div class="progress-txt" id="progress-txt">準備中...</div>
+      </div>
+
+      <!-- 結果 -->
+      <div class="result-wrap" id="result-wrap">
+        <div class="card">
+          <div class="result-meta">
+            <div style="font-size:20px;" id="result-icon">⚡</div>
+            <div class="result-title" id="result-title"></div>
+          </div>
+          <div class="result-desc" id="result-desc"></div>
+          <div class="iframe-wrap">
+            <iframe id="app-iframe" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+            <button class="iframe-expand" onclick="openFullscreen()">⛶ 全画面</button>
+          </div>
+          <!-- iframe状態バー -->
+          <div class="iframe-status" id="iframe-status" style="display:none;">
+            <div style="display:flex;align-items:center;">
+              <div class="status-dot ok" id="status-dot"></div>
+              <span id="status-txt" style="color:var(--txt2);">正常動作中</span>
+            </div>
+            <button onclick="startVisualCheck()" id="visual-btn"
+              style="padding:4px 10px;border-radius:6px;border:1.5px solid var(--bor2);background:var(--bg2);color:var(--txt2);font-size:10px;cursor:pointer;">📸 見た目チェック</button>
+          </div>
+          <!-- エラーバナー -->
+          <div class="err-banner" id="err-banner">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;">
+              <div>
+                <div id="err-title" style="font-size:12px;font-weight:800;margin-bottom:4px;"></div>
+                <div id="err-msg" style="font-size:11px;line-height:1.7;font-family:monospace;white-space:pre-wrap;max-height:80px;overflow-y:auto;"></div>
+              </div>
+              <button onclick="dismissError()" style="flex-shrink:0;border:none;background:none;color:var(--txt3);font-size:16px;cursor:pointer;">✕</button>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <button id="autofix-btn" onclick="autoFix()" style="flex:1;padding:9px;border-radius:var(--r2);border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:11px;font-weight:800;cursor:pointer;">⚡ AIに自動修正させる</button>
+              <button onclick="dismissError()" style="padding:9px 12px;border-radius:var(--r2);border:1.5px solid var(--bor2);background:var(--bg3);color:var(--txt3);font-size:11px;cursor:pointer;">無視</button>
+            </div>
+          </div>
+          <div class="result-actions">
+            <button class="act-btn primary" onclick="copyCode()">📋 コードをコピー</button>
+            <button class="act-btn green" onclick="downloadCode()">💾 HTMLをDL</button>
+            <button class="act-btn" onclick="saveToFav()">⭐ お気に入りに追加</button>
+            <button class="act-btn" onclick="openFixModal()">🔧 修正依頼</button>
+            <button class="act-btn" onclick="openErrorLab()" id="errorlab-btn" style="grid-column:1/-1;border-color:rgba(239,68,68,.4);color:var(--red);background:var(--red-xl);">🔬 ERROR LABで解析・修正</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ 履歴タブ ════ -->
+    <div class="sec" id="sec-history">
+      <div style="padding:8px 0 12px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:14px;font-weight:800;color:var(--txt);">生成履歴</div>
+        <button onclick="clearHistory()" style="padding:5px 12px;border-radius:7px;border:1.5px solid rgba(239,68,68,.3);background:transparent;color:var(--red);font-size:10px;cursor:pointer;">全削除</button>
+      </div>
+      <div id="history-list"></div>
+    </div>
+
+    <!-- ════ お気に入りタブ ════ -->
+    <div class="sec" id="sec-fav">
+      <div style="padding:8px 0 12px;font-size:14px;font-weight:800;color:var(--txt);">お気に入り</div>
+      <div id="fav-list"></div>
+    </div>
+
+    <!-- ════ 設定タブ ════ -->
+    <div class="sec" id="sec-setting">
+      <div style="padding:8px 0 12px;font-size:14px;font-weight:800;color:var(--txt);">設定</div>
+      <div class="card">
+        <div class="card-label">アカウント</div>
+        <div style="font-size:12px;color:var(--txt2);" id="setting-email"></div>
+      </div>
+      <div class="card">
+        <div class="card-label">統計</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div style="text-align:center;padding:12px;background:var(--bg3);border-radius:var(--r2);">
+            <div style="font-size:24px;font-weight:900;color:var(--accent2);" id="stat-total">0</div>
+            <div style="font-size:10px;color:var(--txt3);">生成数</div>
+          </div>
+          <div style="text-align:center;padding:12px;background:var(--bg3);border-radius:var(--r2);">
+            <div style="font-size:24px;font-weight:900;color:var(--green2);" id="stat-fav">0</div>
+            <div style="font-size:10px;color:var(--txt3);">お気に入り数</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-label">データ</div>
+        <button onclick="clearHistory()" style="width:100%;padding:10px;border-radius:var(--r2);border:1.5px solid rgba(239,68,68,.3);background:transparent;color:var(--red);font-size:12px;cursor:pointer;margin-bottom:6px;">生成履歴を全削除</button>
+        <button onclick="clearFav()" style="width:100%;padding:10px;border-radius:var(--r2);border:1.5px solid rgba(239,68,68,.3);background:transparent;color:var(--red);font-size:12px;cursor:pointer;">お気に入りを全削除</button>
+      </div>
+      <!-- 管理者ボタン（管理者のみ表示） -->
+      <div class="card" id="admin-card" style="display:none;">
+        <div class="card-label">管理者機能</div>
+        <button onclick="openAdmin()" style="width:100%;padding:12px;border-radius:var(--r2);border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:13px;font-weight:800;cursor:pointer;">👥 ユーザー管理</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ナビ -->
+  <nav>
+    <button class="nb active" onclick="goTab('create')" id="nb-create"><span class="ic">⚡</span>作る</button>
+    <button class="nb" onclick="goTab('history')" id="nb-history"><span class="ic">📚</span>履歴</button>
+    <button class="nb" onclick="goTab('fav')" id="nb-fav"><span class="ic">⭐</span>お気に入り</button>
+    <button class="nb" onclick="goTab('setting')" id="nb-setting"><span class="ic">⚙️</span>設定</button>
+  </nav>
+</div>
+
+<!-- 修正依頼モーダル -->
+<div id="fix-modal">
+  <div class="fix-panel">
+    <div style="font-size:13px;font-weight:800;margin-bottom:4px;">🔧 修正依頼</div>
+    <div style="font-size:11px;color:var(--txt3);">どこをどう直しますか？（現在のアプリを元に再生成します）</div>
+    <textarea class="fix-ta" id="fix-input" rows="4" placeholder="例：ボタンをもっと大きくして。色をダークブルーに変えて。音量スライダーを追加して。"></textarea>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <button onclick="closeFixModal()" style="padding:11px;border-radius:var(--r2);border:1.5px solid var(--bor2);background:var(--bg3);color:var(--txt2);font-size:13px;cursor:pointer;">キャンセル</button>
+      <button onclick="doFix()" style="padding:11px;border-radius:var(--r2);border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:13px;font-weight:800;cursor:pointer;">⚡ 修正して再生成</button>
+    </div>
+  </div>
+</div>
+
+<!-- 全画面モーダル -->
+<div id="fullscreen-modal">
+  <button class="fs-close" onclick="closeFullscreen()">✕ 閉じる</button>
+  <iframe id="fs-iframe" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, serverTimestamp }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey:"AIzaSyDHlWMV3MNpNTVE0hYgE3vfAh5h5rKL-LM",
+  authDomain:"kensetsu-nippo-842a2.firebaseapp.com",
+  projectId:"kensetsu-nippo-842a2",
+  storageBucket:"kensetsu-nippo-842a2.firebasestorage.app",
+  messagingSenderId:"481855574045",
+  appId:"1:481855574045:web:b12cf5f94cf4c2a50e8b3e"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+window.__fb = { auth, db, createUserWithEmailAndPassword, signOut,
+  doc:(d,...a)=>doc(d,...a), setDoc, getDoc, getDocs, deleteDoc,
+  collection, serverTimestamp };
+window.__auth = auth;
+window.__signIn = (e,p) => signInWithEmailAndPassword(auth,e,p);
+window.__signOut = () => signOut(auth);
+
+onAuthStateChanged(auth, async function(user){
+  document.getElementById('splash').classList.add('hide');
+  if(user){
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('main-app').style.display='block';
+    document.getElementById('setting-email').textContent='ログイン中：'+user.email;
+    updateStats();
+    // isAdmin チェック
+    try{
+      const snap = await getDoc(doc(db,'users',user.uid));
+      if(!snap.exists()) await setDoc(doc(db,'users',user.uid),{uid:user.uid,email:user.email,isAdmin:false,createdAt:serverTimestamp()});
+      if(snap.exists() && snap.data().isAdmin) document.getElementById('admin-card').style.display='block';
+    }catch(e){}
+  } else {
+    document.getElementById('login-screen').style.display='flex';
+    document.getElementById('main-app').style.display='none';
+    document.getElementById('admin-card').style.display='none';
+  }
+});
+</script>
+
+<script>
+const EP='https://us-central1-kensetsu-nippo-842a2.cloudfunctions.net/askAI';
+const KEY='HeartsHouse2026Key';
+const HIST_KEY='forge_history';
+const FAV_KEY='forge_favorites';
+const MAX_HIST=20;
+
+// ── プリセット ──
+const PRESETS = {
+  timer:'シンプルで美しいポモドーロタイマー。25分作業・5分休憩を切り替えられる。残り時間を大きな数字で表示。完了時に音が鳴る。ライトテーマ。モバイル対応。',
+  calc:'建設現場向け計算機。四則演算に加えて「4寸勾配の斜辺計算（水平距離を入力→斜辺を出力）」「㎡→坪変換」「材料の必要枚数計算」の3つの特殊計算ボタン付き。',
+  memo:'シンプルなメモ帳。テキストを入力してEnterで保存。localStorageで永続化。メモ一覧表示・削除・検索機能付き。',
+  quiz:'10問の〇×クイズ。テーマは建設業の基礎知識。スコアを表示。全問終了後に結果画面。かわいいアニメーション付き。',
+  checklist:'工事現場チェックリスト。項目を入力して追加できる。完了チェックボックス付き。完了率をプログレスバーで表示。localStorageで保存。',
+  chat:'AIとなんでも相談できるチャットアプリ。シンプルで美しいチャットUI。会話履歴を表示。AIが丁寧に回答。',
+  daiku:'大工向け計算ツール。①屋根勾配計算（勾配・水平距離→斜辺・垂直高さ）②坪・㎡変換 ③木材の本数計算（面積・間隔→必要本数）④床面積計算。タブで切り替え。',
+  diagnosis:'AIが質問に答えてくれる診断アプリ。5つの質問に答えると性格・タイプ・アドバイスをAIが生成。結果をカード表示。共有ボタン付き。',
+  game:'数字当てゲーム。1〜100の数字をコンピュータが決定。プレイヤーが当てる。ヒント（大きい/小さい）が出る。試行回数カウント。ハイスコア保存。',
+};
+function setPreset(key){ document.getElementById('forge-input').value=PRESETS[key]||''; showToast('テンプレートをセットしました'); }
+
+// ── AIトグル ──
+var aiEnabled = false;
+function toggleAI(){
+  aiEnabled = !aiEnabled;
+  var t = document.getElementById('ai-toggle');
+  aiEnabled ? t.classList.add('on') : t.classList.remove('on');
+}
+
+// ── タブ切り替え ──
+function goTab(name){
+  ['create','history','fav','setting'].forEach(function(n){
+    document.getElementById('sec-'+n).classList.toggle('active',n===name);
+    document.getElementById('nb-'+n).classList.toggle('active',n===name);
+  });
+  if(name==='history') renderHistory();
+  if(name==='fav') renderFav();
+  if(name==='setting') updateStats();
+}
+
+// ── 生成 ──
+var currentHTML = '';
+var currentTitle = '';
+var _forgeController = null; // AbortController
+
+async function startForge(){
+  var input = document.getElementById('forge-input').value.trim();
+  if(!input){ showToast('アプリの内容を入力してください'); return; }
+  doForge(input, null);
+}
+
+// HTML圧縮（コメント・空行・余分なスペースを除去してトークン節約）
+function compressHTML(html){
+  return html
+    .replace(/<!--[\s\S]*?-->/g,'')
+    .replace(/\n\s*\n/g,'\n')
+    .replace(/[ \t]+/g,' ')
+    .trim();
+}
+
+// iframe表示前のHTML検証（3段階）
+function validateHTML(html){
+  if(!html || html.length < 100) return false;
+  if(!html.trim().toLowerCase().includes('<!doctype') && !html.trim().startsWith('<html')) return false;
+  try{
+    var parser = new DOMParser();
+    var doc = parser.parseFromString(html,'text/html');
+    return doc.body && doc.body.children.length > 0;
+  }catch(e){ return false; }
+}
+
+async function doForge(request, prevHTML){
+  var theme = document.getElementById('opt-theme').value;
+  var layout = document.getElementById('opt-layout').value;
+
+  // AbortController（キャンセル用）
+  _forgeController = new AbortController();
+
+  // ボタンをキャンセルに切り替え
+  var btn = document.getElementById('forge-btn');
+  btn.innerHTML = '<div class="sparks"></div>⏹ キャンセル';
+  btn.onclick = cancelForge;
+  btn.disabled = false;
+  btn.classList.add('loading');
+  document.getElementById('progress-wrap').style.display='block';
+  document.getElementById('result-wrap').style.display='none';
+
+  var steps = ['設計中...','コード生成中...','スタイリング中...','仕上げ中...'];
+  var si=0, pct=0;
+  var prog = document.getElementById('progress-fill');
+  var ptxt = document.getElementById('progress-txt');
+  ptxt.textContent = steps[0];
+  var timer = setInterval(function(){
+    pct = Math.min(pct+3,85);
+    prog.style.width = pct+'%';
+    if(pct%22===0){ si=(si+1)%steps.length; ptxt.textContent=steps[si]; }
+  },120);
+
+  var aiInstruction = aiEnabled
+    ? '\n\n# AI機能の実装\n以下のコードをHTMLのscriptタグ内に必ず含め、AI機能を実装すること：\n```\nconst _EP=\'https://us-central1-kensetsu-nippo-842a2.cloudfunctions.net/askAI\';\nconst _KEY=\'HeartsHouse2026Key\';\nasync function callAI(prompt,useSearch){\n  const r=await fetch(_EP,{method:\'POST\',headers:{\'Content-Type\':\'application/json\',\'X-Access-Key\':_KEY},body:JSON.stringify({model:\'gemini-2.5-flash\',prompt:prompt,useSearch:!!useSearch})});\n  const d=await r.json().catch(()=>({}));\n  return d?.data?.text||d?.candidates?.[0]?.content?.parts?.[0]?.text||d?.text||\'\';\n}\n```\nAI関連ボタンは「⚡ AIに聞く」のようなラベルにすること。'
+    : '';
+
+  // ③ HTML圧縮して10000文字まで渡す（修正精度が大幅向上）
+  var prevInstruction = prevHTML
+    ? '\n\n# 修正元のHTML\n以下のHTMLを元に、修正依頼に従って改善した新しいHTMLを生成すること。\n---\n'+compressHTML(prevHTML).slice(0,10000)+'\n---'
+    : '';
+
+  var sysPrompt = '# あなたの役割\nあなたは超優秀なフロントエンドエンジニアおよびUI/UXデザイナーです。\nユーザーの要望を正確に理解し、ブラウザ上で単体で完全に動作する、美しいシングルページアプリケーション（SPA）のソースコードを1枚のHTMLとして生成してください。\n\n# 絶対ルール\n1. 成果物は単一の<!DOCTYPE html>から始まる完結したHTMLファイル\n2. CSS・JSはすべてHTML内に埋め込む（外部ファイル禁止）\n3. CDN経由のライブラリは使用可（Chart.js・FontAwesome等）\n4. マークダウンのバッククォート・解説・挨拶は一切不要\n5. JSONフォーマットのhtml_codeフィールドに純粋なHTMLのみを出力\n6. 日本語UIで実装\n\n# デザイン要件\n- テーマ：'+{light:'ライト（白背景・清潔感）',dark:'ダーク（黒背景・スタイリッシュ）',colorful:'カラフル（鮮やかな色使い）',minimal:'ミニマル（余白多め・シンプル）'}[theme]+'\n- レイアウト：'+(layout==='mobile'?'モバイルファースト（スマートフォン最適化）':'PC・スマートフォン両対応のレスポンシブ')+'\n- localStorage でデータ永続化（必要な場合）\n- タップ・クリックしやすいUI（最低44px）'
+    + aiInstruction + prevInstruction;
+
+  var userPrompt = prevHTML
+    ? '修正依頼：'+request+'\n\n元のアプリの機能はすべて維持しつつ、上記の修正を適用したHTMLを生成してください。'
+    : 'アプリの要件：'+request;
+
+  try{
+    var res = await fetch(EP,{
+      method:'POST',
+      signal: _forgeController.signal,
+      headers:{'Content-Type':'application/json','X-Access-Key':KEY},
+      body:JSON.stringify({
+        model:'gemini-2.5-flash',
+        prompt: sysPrompt+'\n\nユーザー要件：\n'+userPrompt,
+        useSearch:false,
+        responseSchema:{
+          type:'object',
+          properties:{
+            app_title:{type:'string'},
+            app_description:{type:'string'},
+            html_code:{type:'string'}
+          },
+          required:['app_title','app_description','html_code']
+        }
+      })
+    });
+    var d = await res.json().catch(function(){return{};});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    var raw = d?.data?.text||d?.candidates?.[0]?.content?.parts?.[0]?.text||d?.text||'';
+    var clean = raw.replace(/```json|```/g,'').trim();
+    var parsed = JSON.parse(clean);
+
+    clearInterval(timer);
+    prog.style.width='100%';
+    ptxt.textContent='✅ 完成！';
+    setTimeout(function(){ document.getElementById('progress-wrap').style.display='none'; },800);
+
+    currentHTML = parsed.html_code || '';
+    currentTitle = parsed.app_title || 'アプリ';
+
+    // ② iframe空白対策（3段階バリデーション）
+    var iframe = document.getElementById('app-iframe');
+    if(validateHTML(currentHTML)){
+      setIframe(currentHTML);
+      document.getElementById('result-wrap').style.display='block';
+      document.getElementById('result-title').textContent = currentTitle;
+      document.getElementById('result-desc').textContent = parsed.app_description || '';
+    } else {
+      // HTML不正でも履歴に残す（再試行のため）
+      currentTitle = '⚠️ 生成失敗 — '+( parsed.app_title||'アプリ');
+      document.getElementById('result-wrap').style.display='block';
+      document.getElementById('result-title').textContent = currentTitle;
+      document.getElementById('result-desc').textContent = 'もう少し詳しく説明して再生成してください。';
+      iframe.srcdoc = '<html><body style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#888;font-size:14px;text-align:center;padding:20px;">生成されたHTMLが不完全でした<br><br>🔧 修正依頼から再試行できます</body></html>';
+    }
+
+    // 成功・失敗どちらも履歴保存（再試行できるように）
+    saveToHistory({
+      id:Date.now(),title:currentTitle,
+      desc:parsed.app_description||'',html:currentHTML,
+      aiEnabled:aiEnabled,theme:theme,request:request,
+      date:new Date().toLocaleString('ja-JP')
+    });
+    showToast(currentHTML && validateHTML(currentHTML) ? '✅ '+currentTitle+' が完成しました！' : '⚠️ 生成失敗。修正依頼から再試行できます');
+
+  }catch(err){
+    clearInterval(timer);
+    document.getElementById('progress-wrap').style.display='none';
+    if(err.name==='AbortError'){
+      showToast('⏹ 生成をキャンセルしました');
+      document.getElementById('result-wrap').style.display='none'; // ①キャンセル時は前の結果を隠す
+    } else {
+      showToast('❌ 生成エラー: '+err.message);
+    }
+  }
+
+  // ボタンを元に戻す
+  btn.innerHTML = '<div class="sparks"></div>⚡ アプリを生成する';
+  btn.onclick = startForge;
+  btn.disabled = false;
+  btn.classList.remove('loading');
+  prog.style.width='0';
+  _forgeController = null;
+}
+
+// ① キャンセル
+function cancelForge(){
+  if(_forgeController){ _forgeController.abort(); }
+}
+
+// ── 修正依頼 ──
+function openFixModal(){ document.getElementById('fix-modal').classList.add('show'); }
+function closeFixModal(){ document.getElementById('fix-modal').classList.remove('show'); }
+async function doFix(){
+  var req = document.getElementById('fix-input').value.trim();
+  if(!req){ showToast('修正内容を入力してください'); return; }
+  if(!currentHTML){ showToast('先にアプリを生成してください'); return; }
+  closeFixModal();
+  goTab('create');
+  document.getElementById('fix-input').value='';
+  doForge(req, currentHTML);
+}
+
+// ── コピー・DL ──
+// ── エラー検知・自動修正・見た目チェック ──
+var _detectedErrors=[];
+var _fixAttempts=0;
+var _errorTimer=null;
+
+function injectErrorWatcher(html){
+  var watcher='<script>'
+    +'window.onerror=function(msg,src,line,col,err){'
+    +'window.parent.postMessage({type:"FORGE_ERR",msg:msg,line:line,stack:err&&err.stack||""},"*");'
+    +'return true;};'
+    +'window.addEventListener("unhandledrejection",function(e){'
+    +'var m=e.reason&&e.reason.message||String(e.reason)||"Promise rejection";'
+    +'window.parent.postMessage({type:"FORGE_ERR",msg:m,line:0,stack:""},"*");});'
+    +'<\/script>';
+  return html.includes('<head>') ? html.replace('<head>','<head>'+watcher) : watcher+html;
+}
+
+function setIframe(html){
+  document.getElementById('app-iframe').srcdoc=injectErrorWatcher(html);
+  _detectedErrors=[]; _fixAttempts=0;
+  document.getElementById('iframe-status').style.display='flex';
+  setStatus('checking'); dismissError();
+  clearTimeout(_errorTimer);
+  _errorTimer=setTimeout(function(){ if(_detectedErrors.length===0) setStatus('ok'); },3000);
+}
+
+function setStatus(s){
+  document.getElementById('status-dot').className='status-dot '+s;
+  var t={ok:'✅ 正常動作中',err:'❌ エラーあり',checking:'🔍 チェック中...'};
+  var c={ok:'var(--green2)',err:'var(--red)',checking:'var(--gold)'};
+  document.getElementById('status-txt').textContent=t[s]||s;
+  document.getElementById('status-txt').style.color=c[s]||'var(--txt2)';
+}
+
+window.addEventListener('message',function(e){
+  if(!e.data||e.data.type!=='FORGE_ERR') return;
+  _detectedErrors.push(e.data);
+  setStatus('err'); clearTimeout(_errorTimer);
+  var banner=document.getElementById('err-banner');
+  var title=document.getElementById('err-title');
+  var msg=document.getElementById('err-msg');
+  banner.className='err-banner show type-err';
+  title.style.color='var(--red)';
+  title.textContent='⚠️ エラーを検出しました'+(e.data.line?' (line '+e.data.line+')':'');
+  msg.textContent=e.data.msg+(e.data.stack?'\n'+e.data.stack.split('\n').slice(0,3).join('\n'):'');
+  document.getElementById('autofix-btn').style.display='block';
+  document.getElementById('autofix-btn').textContent='⚡ AIに自動修正させる';
+  document.getElementById('autofix-btn').onclick=autoFix;
+});
+
+function dismissError(){
+  document.getElementById('err-banner').className='err-banner';
+}
+
+async function autoFix(){
+  if(!currentHTML){showToast('コードがありません');return;}
+  if(_fixAttempts>=3){showToast('⚠️ 3回修正を試みました。最初から再生成してください。');return;}
+  _fixAttempts++;
+  var errSummary=_detectedErrors.map(function(e){
+    return 'Error: '+e.msg+(e.line?' at line '+e.line:'');
+  }).join('\n');
+  var btn=document.getElementById('autofix-btn');
+  btn.textContent='🔧 修正中...';btn.disabled=true;
+  setStatus('checking');
+  try{
+    var res=await fetch(EP,{method:'POST',
+      headers:{'Content-Type':'application/json','X-Access-Key':KEY},
+      body:JSON.stringify({model:'gemini-2.5-flash',
+        prompt:'以下のHTMLアプリにJavaScriptエラーが発生しています。\n\n【エラー内容】\n'+errSummary
+          +'\n\n【元のHTML】\n'+compressHTML(currentHTML).slice(0,10000)
+          +'\n\nエラーを修正し正常動作するHTMLを生成してください。機能・デザインはそのまま維持すること。',
+        useSearch:false,
+        responseSchema:{type:'object',properties:{
+          html_code:{type:'string'},fix_summary:{type:'string'}
+        },required:['html_code','fix_summary']}
+      })});
+    var d=await res.json().catch(function(){return{};});
+    var raw=d?.data?.text||d?.candidates?.[0]?.content?.parts?.[0]?.text||d?.text||'';
+    var parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    if(validateHTML(parsed.html_code)){
+      currentHTML=parsed.html_code;
+      setIframe(currentHTML);
+      saveToHistory({id:Date.now(),title:'🔧 修正版 — '+currentTitle,
+        desc:parsed.fix_summary||'エラー自動修正',html:currentHTML,
+        aiEnabled:aiEnabled,theme:'',request:'自動エラー修正',
+        date:new Date().toLocaleString('ja-JP')});
+      var banner=document.getElementById('err-banner');
+      banner.className='err-banner show type-ok';
+      document.getElementById('err-title').style.color='var(--green2)';
+      document.getElementById('err-title').textContent='✅ 修正完了（'+_fixAttempts+'回目）';
+      document.getElementById('err-msg').textContent=parsed.fix_summary||'';
+      document.getElementById('autofix-btn').style.display='none';
+      showToast('✅ エラーを修正しました（'+_fixAttempts+'回目）');
+    }else{showToast('❌ 修正版が無効でした。再試行してください。');}
+  }catch(err){showToast('❌ 修正エラー: '+err.message);}
+  btn.textContent='⚡ AIに自動修正させる';btn.disabled=false;
+}
+
+async function startVisualCheck(){
+  var vbtn=document.getElementById('visual-btn');
+  vbtn.textContent='📸 撮影中...';vbtn.disabled=true;
+  setStatus('checking');
+  try{
+    if(!window.html2canvas){
+      await new Promise(function(resolve,reject){
+        var s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+        s.onload=resolve;s.onerror=reject;document.head.appendChild(s);
+      });
+    }
+    var iframe=document.getElementById('app-iframe');
+    var canvas=await window.html2canvas(iframe.contentDocument.body,
+      {useCORS:true,allowTaint:true,scale:0.5,logging:false});
+    var base64=canvas.toDataURL('image/jpeg',0.75);
+    vbtn.textContent='🤖 AI分析中...';
+    var res=await fetch(EP,{method:'POST',
+      headers:{'Content-Type':'application/json','X-Access-Key':KEY},
+      body:JSON.stringify({model:'gemini-2.5-flash',
+        prompt:'このWebアプリのスクリーンショットを見てUI/UXの問題点を分析してください。問題があれば具体的に指摘し修正版HTMLを生成してください。問題がなければhas_issues:falseで返してください。',
+        useSearch:false,
+        mediaContents:[{type:'image/jpeg',base64:base64}],
+        responseSchema:{type:'object',properties:{
+          has_issues:{type:'boolean'},issues:{type:'string'},html_code:{type:'string'}
+        },required:['has_issues','issues']}
+      })});
+    var d2=await res.json().catch(function(){return{};});
+    var raw2=d2?.data?.text||d2?.candidates?.[0]?.content?.parts?.[0]?.text||d2?.text||'';
+    var result=JSON.parse(raw2.replace(/```json|```/g,'').trim());
+    var banner=document.getElementById('err-banner');
+    if(result.has_issues){
+      banner.className='err-banner show type-visual';
+      document.getElementById('err-title').style.color='var(--accent2)';
+      document.getElementById('err-title').textContent='📸 見た目の問題を検出しました';
+      document.getElementById('err-msg').textContent=result.issues||'';
+      var fb2=document.getElementById('autofix-btn');
+      fb2.style.display='block';fb2.textContent='⚡ 見た目を修正する';
+      fb2.onclick=function(){
+        if(result.html_code&&validateHTML(result.html_code)){
+          currentHTML=result.html_code;setIframe(currentHTML);
+          showToast('✅ 見た目を修正しました');dismissError();
+        } else {fb2.onclick=autoFix;autoFix();}
+      };
+      setStatus('err');
+    }else{
+      banner.className='err-banner show type-ok';
+      document.getElementById('err-title').style.color='var(--green2)';
+      document.getElementById('err-title').textContent='📸 見た目チェック完了';
+      document.getElementById('err-msg').textContent='問題は検出されませんでした ✅';
+      document.getElementById('autofix-btn').style.display='none';
+      setStatus('ok');setTimeout(dismissError,3000);
+    }
+  }catch(e){
+    showToast('📸 取得失敗: '+e.message);setStatus('ok');
+  }
+  vbtn.textContent='📸 見た目チェック';vbtn.disabled=false;
+}
+
+// ── コピー・DL ──
+function copyCode(){
+  if(!currentHTML){ showToast('コードがありません'); return; }
+  if(navigator.clipboard) navigator.clipboard.writeText(currentHTML).then(function(){ showToast('📋 HTMLコードをコピーしました'); });
+}
+function downloadCode(){
+  if(!currentHTML){ showToast('コードがありません'); return; }
+  var a = document.createElement('a');
+  var blob = new Blob([currentHTML],{type:'text/html;charset=utf-8'});
+  a.href = URL.createObjectURL(blob);
+  a.download = (currentTitle||'app').replace(/[^\w\u3040-\u9FFF]/g,'_')+'.html';
+  a.click();
+  showToast('💾 HTMLをダウンロードしました');
+}
+
+// ── 全画面 ──
+function openFullscreen(){
+  if(!currentHTML) return;
+  document.getElementById('fs-iframe').srcdoc=currentHTML;
+  document.getElementById('fullscreen-modal').classList.add('show');
+}
+function closeFullscreen(){ document.getElementById('fullscreen-modal').classList.remove('show'); }
+
+// ── 履歴 ──
+function getHistory(){ try{return JSON.parse(localStorage.getItem(HIST_KEY))||[];}catch{return[];} }
+function saveToHistory(item){
+  var h=getHistory();
+  h.unshift(item);
+  if(h.length>MAX_HIST) h=h.slice(0,MAX_HIST);
+  localStorage.setItem(HIST_KEY,JSON.stringify(h));
+}
+function renderHistory(){
+  var h=getHistory();
+  var el=document.getElementById('history-list');
+  if(!h.length){ el.innerHTML='<div class="empty-state"><div class="empty-icon">📚</div><div>まだ生成履歴がありません</div></div>'; return; }
+  el.innerHTML=h.map(function(item){
+    return '<div class="history-item">'
+      +'<div class="hi-title">'+esc(item.title||'アプリ')+'</div>'
+      +'<div class="hi-desc">'+esc((item.desc||'').slice(0,80))+'</div>'
+      +'<div class="hi-meta"><span>'+esc(item.date||'')+'</span>'+(item.aiEnabled?'<span class="hi-ai-badge">⚡ AI搭載</span>':'')+'</div>'
+      +'<div class="hi-actions">'
+      +'<button class="hi-btn" onclick="reloadFromHistory('+item.id+')">▶ 表示</button>'
+      +'<button class="hi-btn" onclick="reFixFromHistory('+item.id+')">🔧 修正</button>'
+      +'<button class="hi-btn" onclick="favFromHistory('+item.id+')">⭐ 保存</button>'
+      +'<button class="hi-btn del" onclick="deleteHistory('+item.id+')">削除</button>'
+      +'</div></div>';
+  }).join('');
+}
+function reloadFromHistory(id){
+  var item=getHistory().find(function(h){return h.id===id;});
+  if(!item) return;
+  currentHTML=item.html; currentTitle=item.title||'アプリ';
+  document.getElementById('app-iframe').srcdoc=currentHTML;
+  document.getElementById('result-title').textContent=currentTitle;
+  document.getElementById('result-desc').textContent=item.desc||'';
+  document.getElementById('result-wrap').style.display='block';
+  goTab('create');
+}
+function reFixFromHistory(id){
+  var item=getHistory().find(function(h){return h.id===id;});
+  if(!item) return;
+  currentHTML=item.html; currentTitle=item.title||'アプリ';
+  goTab('create');
+  openFixModal();
+}
+function favFromHistory(id){
+  var item=getHistory().find(function(h){return h.id===id;});
+  if(!item) return;
+  addToFav(item);
+}
+function deleteHistory(id){
+  var h=getHistory().filter(function(item){return item.id!==id;});
+  localStorage.setItem(HIST_KEY,JSON.stringify(h));
+  renderHistory();
+}
+function clearHistory(){
+  if(!confirm('生成履歴を全件削除しますか？')) return;
+  localStorage.removeItem(HIST_KEY);
+  renderHistory();
+  updateStats();
+  showToast('履歴を削除しました');
+}
+
+// ── お気に入り ──
+function getFav(){ try{return JSON.parse(localStorage.getItem(FAV_KEY))||[];}catch{return[];} }
+function saveToFav(){
+  if(!currentHTML){ showToast('先にアプリを生成してください'); return; }
+  addToFav({id:Date.now(),title:currentTitle,desc:document.getElementById('result-desc').textContent,html:currentHTML,aiEnabled:aiEnabled,date:new Date().toLocaleString('ja-JP')});
+}
+function addToFav(item){
+  var favs=getFav();
+  if(favs.find(function(f){return f.title===item.title&&f.date===item.date;})){ showToast('すでに保存済みです'); return; }
+  var newItem=Object.assign({},item,{id:Date.now(),date:new Date().toLocaleString('ja-JP')});
+  favs.unshift(newItem);
+  localStorage.setItem(FAV_KEY,JSON.stringify(favs));
+  showToast('⭐ お気に入りに保存しました');
+  updateStats();
+}
+function renderFav(){
+  var favs=getFav();
+  var el=document.getElementById('fav-list');
+  if(!favs.length){ el.innerHTML='<div class="empty-state"><div class="empty-icon">⭐</div><div>お気に入りがありません</div></div>'; return; }
+  el.innerHTML=favs.map(function(item){
+    return '<div class="history-item">'
+      +'<div class="hi-title">⭐ '+esc(item.title||'アプリ')+'</div>'
+      +'<div class="hi-desc">'+esc((item.desc||'').slice(0,80))+'</div>'
+      +'<div class="hi-meta"><span>'+esc(item.date||'')+'</span>'+(item.aiEnabled?'<span class="hi-ai-badge">⚡ AI搭載</span>':'')+'</div>'
+      +'<div class="hi-actions">'
+      +'<button class="hi-btn" onclick="reloadFromFav('+item.id+')">▶ 表示</button>'
+      +'<button class="hi-btn" onclick="downloadFav('+item.id+')">💾 DL</button>'
+      +'<button class="hi-btn del" onclick="deleteFav('+item.id+')">削除</button>'
+      +'</div></div>';
+  }).join('');
+}
+function reloadFromFav(id){
+  var item=getFav().find(function(f){return f.id===id;});
+  if(!item) return;
+  currentHTML=item.html; currentTitle=item.title||'アプリ';
+  document.getElementById('app-iframe').srcdoc=currentHTML;
+  document.getElementById('result-title').textContent=currentTitle;
+  document.getElementById('result-desc').textContent=item.desc||'';
+  document.getElementById('result-wrap').style.display='block';
+  goTab('create');
+}
+function downloadFav(id){
+  var item=getFav().find(function(f){return f.id===id;});
+  if(!item) return;
+  var a=document.createElement('a');
+  var blob=new Blob([item.html],{type:'text/html;charset=utf-8'});
+  a.href=URL.createObjectURL(blob);
+  a.download=(item.title||'app').replace(/[^\w\u3040-\u9FFF]/g,'_')+'.html';
+  a.click();
+}
+function deleteFav(id){
+  var favs=getFav().filter(function(f){return f.id!==id;});
+  localStorage.setItem(FAV_KEY,JSON.stringify(favs));
+  renderFav();
+  updateStats();
+}
+function clearFav(){
+  if(!confirm('お気に入りを全件削除しますか？')) return;
+  localStorage.removeItem(FAV_KEY);
+  renderFav();
+  updateStats();
+  showToast('お気に入りを削除しました');
+}
+
+// ── 統計 ──
+function updateStats(){
+  document.getElementById('stat-total').textContent=getHistory().length;
+  document.getElementById('stat-fav').textContent=getFav().length;
+}
+
+// ── ERROR LAB 連携 ──
+var _errorLabSrc = 'error-lab.html'; // 同一フォルダに置く想定
+
+function openErrorLab(){
+  if(!currentHTML){showToast('先にアプリを生成してください');return;}
+  var modal=document.getElementById('errorlab-modal');
+  var iframe=document.getElementById('errorlab-iframe');
+  modal.style.display='flex';
+  // ERROR LABをロードしてからHTMLを送る
+  iframe.src=_errorLabSrc;
+  iframe.onload=function(){
+    setTimeout(function(){
+      iframe.contentWindow.postMessage({
+        type:'ERRORLAB_INIT',
+        html:currentHTML,
+        title:currentTitle
+      },'*');
+    },500);
+  };
+}
+
+function closeErrorLab(){
+  document.getElementById('errorlab-modal').style.display='none';
+  document.getElementById('errorlab-iframe').src='';
+}
+
+// ERROR LABから修正済みHTMLを受け取る
+window.addEventListener('message',function(e){
+  if(e.data&&e.data.type==='ERRORLAB_RESULT'&&e.data.html){
+    currentHTML=e.data.html;
+    setIframe(currentHTML);
+    document.getElementById('result-title').textContent='🔬 '+currentTitle+' (修正済み)';
+    saveToHistory({id:Date.now(),title:'🔬 修正済み — '+currentTitle,
+      desc:'ERROR LABで解析・修正しました',html:currentHTML,
+      aiEnabled:aiEnabled,theme:'',request:'ERROR LAB修正',
+      date:new Date().toLocaleString('ja-JP')});
+    closeErrorLab();
+    showToast('✅ ERROR LABの修正を適用しました');
+  }
+});
+
+// ── 管理者機能 ──
+function openAdmin(){ document.getElementById('adminPanel').style.display='flex'; loadUsers(); }
+function closeAdmin(){
+  document.getElementById('adminPanel').style.display='none';
+  ['nuEmail','nuPass'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('nuErr').textContent='';
+}
+function genPass(){
+  var chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#';
+  var pass='';for(var i=0;i<10;i++) pass+=chars[Math.floor(Math.random()*chars.length)];
+  document.getElementById('nuPass').value=pass;
+}
+async function addUser(){
+  var email=document.getElementById('nuEmail').value.trim();
+  var pass=document.getElementById('nuPass').value.trim();
+  var err=document.getElementById('nuErr');
+  err.textContent='';
+  if(!email||!pass){err.textContent='メールアドレスと仮パスワードを入力してください';return;}
+  var btn=document.getElementById('addUserBtn');
+  btn.textContent='登録中...';btn.disabled=true;
+  try{
+    var fb=window.__fb;
+    var cred=await fb.createUserWithEmailAndPassword(fb.auth,email,pass);
+    await fb.setDoc(fb.doc(fb.db,'users',cred.user.uid),{uid:cred.user.uid,email:email,isAdmin:false,createdAt:fb.serverTimestamp()});
+    ['nuEmail','nuPass'].forEach(function(id){document.getElementById(id).value='';});
+    showToast('✅ '+email+' を登録しました');
+    loadUsers();
+  }catch(e){
+    err.textContent='エラー: '+(e.code==='auth/email-already-in-use'?'すでに登録済みのメールアドレスです':e.message);
+  }
+  btn.textContent='登録する';btn.disabled=false;
+}
+async function loadUsers(){
+  var el=document.getElementById('userList');
+  el.textContent='読み込み中...';
+  try{
+    var fb=window.__fb;
+    var snap=await fb.getDocs(fb.collection(fb.db,'users'));
+    if(snap.empty){el.textContent='ユーザーがいません';return;}
+    var html='';
+    snap.forEach(function(d){
+      var u=d.data();
+      var badge=u.isAdmin?'<span style="background:var(--accent);color:#fff;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">管理者</span>':'';
+      html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bor);">'
+        +'<div style="font-size:11px;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">'+esc(u.email||d.id)+badge+'</div>'
+        +'<button data-uid="'+d.id+'" data-em="'+(u.email||'')+'" onclick="deleteUser(this.dataset.uid,this.dataset.em,this)" style="flex-shrink:0;background:rgba(239,68,68,.1);border:1.5px solid rgba(239,68,68,.3);color:var(--red);border-radius:6px;padding:3px 9px;font-size:10px;cursor:pointer;margin-left:8px;">削除</button>'
+        +'</div>';
+    });
+    el.innerHTML=html;
+  }catch(e){el.textContent='読み込みエラー: '+e.message;}
+}
+async function deleteUser(uid,email,btn){
+  if(!confirm(email+' を削除しますか？')) return;
+  btn.textContent='削除中...';btn.disabled=true;
+  try{
+    var fb=window.__fb;
+    await fb.deleteDoc(fb.doc(fb.db,'users',uid));
+    showToast('削除しました');
+    loadUsers();
+  }catch(e){alert('削除エラー: '+e.message);btn.textContent='削除';btn.disabled=false;}
+}
+
+// ── ログイン ──
+async function doLogin(){
+  var e=document.getElementById('l-email').value.trim();
+  var p=document.getElementById('l-pass').value;
+  var err=document.getElementById('l-err');
+  err.textContent='';
+  if(!e||!p){err.textContent='メールアドレスとパスワードを入力してください';return;}
+  try{
+    await window.__signIn(e,p);
+  }catch(ex){
+    err.textContent='ログインエラー: '+( ex.code==='auth/invalid-credential'?'メールアドレスまたはパスワードが違います':ex.message);
+  }
+}
+async function doLogout(){
+  if(!confirm('ログアウトしますか？')) return;
+  await window.__signOut();
+}
+
+// ── ユーティリティ ──
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+var _tt;
+function showToast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(_tt); _tt=setTimeout(function(){t.classList.remove('show');},3000);
+}
+
+// Enter キー でログイン
+document.getElementById('l-pass').addEventListener('keydown',function(e){ if(e.key==='Enter') doLogin(); });
+</script>
+</body>
+</html>
