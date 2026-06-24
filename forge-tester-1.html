@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>FORGE TESTER</title>
+<style>
+:root{
+  --bg:#0a0f0a;--bg2:#111811;--bg3:#182018;
+  --card:#182018;--bor:rgba(80,200,80,.1);--bor2:rgba(80,200,80,.22);
+  --grn:#10b981;--grn2:#059669;--grn-xl:rgba(16,185,129,.12);
+  --gold:#f0b830;--gold-xl:rgba(240,184,48,.12);
+  --red:#ef4444;--red-xl:rgba(239,68,68,.1);
+  --blue:#3b82f6;--blue-xl:rgba(59,130,246,.1);
+  --pur:#a855f7;
+  --txt:#f0f5f0;--txt2:#90b090;--txt3:#506050;
+  --r:12px;--r2:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--txt);font-family:'Hiragino Sans','Noto Sans JP',sans-serif;min-height:100vh;}
+.hdr{background:linear-gradient(135deg,#0a1f0a,#0a0a1f);border-bottom:1.5px solid var(--bor);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
+.hdr-title{font-size:16px;font-weight:900;background:linear-gradient(90deg,var(--grn),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.nav-links{display:flex;gap:5px;}
+.nav-btn{padding:5px 10px;border-radius:20px;border:1.5px solid var(--bor2);background:transparent;color:var(--txt2);font-size:10px;cursor:pointer;text-decoration:none;}
+.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--bor);}
+.tab{flex:1;padding:10px 3px;border:none;background:none;color:var(--txt3);font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;}
+.tab.on{color:var(--grn);border-bottom:2px solid var(--grn);margin-bottom:-1px;}
+.main{padding:14px;max-width:600px;margin:0 auto;}
+.card{background:var(--card);border:1.5px solid var(--bor);border-radius:var(--r);padding:14px;margin-bottom:12px;}
+.card-lbl{font-size:10px;font-weight:700;color:var(--txt3);letter-spacing:.5px;margin-bottom:8px;}
+.inp{width:100%;padding:10px 12px;background:var(--bg3);border:1.5px solid var(--bor);border-radius:var(--r2);color:var(--txt);font-size:12px;font-family:inherit;outline:none;margin-bottom:8px;}
+.inp:focus{border-color:var(--grn);}
+.sel{width:100%;padding:10px 12px;background:var(--bg3);border:1.5px solid var(--bor);border-radius:var(--r2);color:var(--txt);font-size:12px;font-family:inherit;outline:none;margin-bottom:8px;}
+.btn{padding:11px 16px;border-radius:var(--r2);border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;}
+.btn:active{transform:scale(.97);}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn-grn{background:linear-gradient(135deg,var(--grn2),var(--grn));color:#fff;}
+.btn-gold{background:linear-gradient(135deg,#d4960a,var(--gold));color:#000;}
+.btn-red{background:linear-gradient(135deg,#dc2626,var(--red));color:#fff;}
+.btn-blue{background:linear-gradient(135deg,#1d4ed8,var(--blue));color:#fff;}
+.btn-ghost{background:var(--bg3);border:1.5px solid var(--bor2);color:var(--txt2);}
+.btn-full{width:100%;}
+.btn-row{display:flex;gap:8px;}
+/* 部分修正 */
+.diff-item{background:var(--bg3);border:1.5px solid var(--bor);border-radius:var(--r2);padding:10px;margin-bottom:6px;}
+.diff-file{font-size:10px;color:var(--grn);font-weight:700;margin-bottom:4px;}
+.diff-detail{font-size:11px;color:var(--txt2);line-height:1.6;}
+/* ABテスト */
+.ab-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.ab-panel{border:2px solid var(--bor);border-radius:var(--r2);overflow:hidden;}
+.ab-lbl{padding:6px;font-size:10px;font-weight:700;text-align:center;background:var(--bg3);}
+.ab-iframe{width:100%;height:180px;border:none;display:block;background:#fff;}
+/* Firebase チェックリスト */
+.fb-check{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bor);}
+.fb-check:last-child{border-bottom:none;}
+.fb-check input{width:18px;height:18px;cursor:pointer;}
+.fb-check-info{flex:1;}
+.fb-check-name{font-size:12px;font-weight:700;color:var(--txt);}
+.fb-check-desc{font-size:10px;color:var(--txt3);}
+/* 強化パック */
+.pack-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;}
+.pack-item{background:var(--bg3);border:1.5px solid var(--bor);border-radius:var(--r2);padding:10px;cursor:pointer;transition:.15s;}
+.pack-item.on{border-color:var(--grn);background:var(--grn-xl);}
+.pack-ico{font-size:20px;margin-bottom:4px;}
+.pack-nm{font-size:11px;font-weight:700;color:var(--txt);}
+.pack-desc{font-size:9px;color:var(--txt3);margin-top:2px;line-height:1.4;}
+/* ローディング */
+.loading-wrap{text-align:center;padding:24px;}
+.loading-ico{font-size:36px;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-txt{font-size:11px;color:var(--txt3);margin-top:8px;}
+.ai-note{background:var(--bg3);border:1.5px solid var(--bor);border-radius:var(--r2);padding:12px;font-size:11px;color:var(--txt2);line-height:1.8;margin-bottom:10px;}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1.5px solid var(--bor2);color:var(--txt);padding:8px 18px;border-radius:20px;font-size:11px;font-weight:700;z-index:9999;pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap;}
+#toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div>
+    <div class="hdr-title">🔧 FORGE TESTER</div>
+    <div style="font-size:9px;color:var(--txt3);">部分修正・ABテスト・Firebase挿入・強化パック</div>
+  </div>
+  <div class="nav-links">
+    <a class="nav-btn" href="index.html">🏠</a>
+    <a class="nav-btn" href="forge.html">⚡</a>
+    <a class="nav-btn" href="forge-designer.html">🎨</a>
+    <a class="nav-btn" href="error-lab.html">🔬</a>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab on" onclick="goTab('partial',this)">✂ 部分修正</button>
+  <button class="tab" onclick="goTab('ab',this)">⚖ AB比較</button>
+  <button class="tab" onclick="goTab('firebase',this)">🔥 Firebase</button>
+  <button class="tab" onclick="goTab('pack',this)">📦 強化パック</button>
+</div>
+
+<div class="main">
+
+  <div id="html-info" class="card" style="padding:10px 14px;">
+    <div style="font-size:11px;color:var(--txt2);">🔧 対象：<span id="app-title-lbl" style="color:var(--grn);font-weight:700;">（FORGEで生成したアプリを読み込みます）</span></div>
+  </div>
+
+  <!-- ════ 部分修正タブ ════ -->
+  <div id="pg-partial">
+    <div class="card">
+      <div class="card-lbl">✂ 何を変えたいですか？</div>
+      <input class="inp" id="partial-req" placeholder="例：ボタンを角丸に・ヘッダーを青に・フォントを大きく">
+      <div class="card-lbl">変更範囲</div>
+      <select class="sel" id="partial-scope">
+        <option value="css">CSSのみ（速い・安い）</option>
+        <option value="html">HTML構造も変更</option>
+        <option value="js">JavaScript動作も変更</option>
+        <option value="all">全体的な改善</option>
+      </select>
+    </div>
+    <button class="btn btn-grn btn-full" onclick="applyPartial()" id="partial-btn">✂ 部分修正する</button>
+    <div id="partial-loading" style="display:none;"><div class="loading-wrap"><div class="loading-ico">✂</div><div class="loading-txt" id="partial-txt">修正箇所を特定中...</div></div></div>
+    <div id="partial-result" style="display:none;">
+      <div class="card" id="partial-diff-card">
+        <div class="card-lbl">変更内容</div>
+        <div id="partial-diff-list"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-grn" onclick="applyPartialFix()" style="flex:1;">✅ 適用する</button>
+        <button class="btn btn-ghost" onclick="cancelPartial()" style="flex:1;">❌ キャンセル</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ ABテストタブ ════ -->
+  <div id="pg-ab" style="display:none;">
+    <div class="card">
+      <div class="card-lbl">⚖ バージョンBの生成条件</div>
+      <input class="inp" id="ab-req" placeholder="例：ダークテーマで・もっとシンプルに・角丸を多用して">
+      <button class="btn btn-gold btn-full" onclick="generateB()" id="ab-btn">⚖ バージョンBを生成</button>
+    </div>
+    <div id="ab-loading" style="display:none;"><div class="loading-wrap"><div class="loading-ico">⚖</div><div class="loading-txt">バージョンBを生成中...</div></div></div>
+    <div id="ab-compare" style="display:none;">
+      <div class="ab-grid">
+        <div class="ab-panel">
+          <div class="ab-lbl">Version A（現在）</div>
+          <iframe id="ab-a" class="ab-iframe" sandbox="allow-scripts"></iframe>
+        </div>
+        <div class="ab-panel">
+          <div class="ab-lbl" style="color:var(--gold);">Version B（新）</div>
+          <iframe id="ab-b" class="ab-iframe" sandbox="allow-scripts"></iframe>
+        </div>
+      </div>
+      <div id="ab-diff-note" class="ai-note"></div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="keepA()" style="flex:1;">← Aを採用</button>
+        <button class="btn btn-gold" onclick="keepB()" style="flex:1;">Bを採用 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ Firebase挿入タブ ════ -->
+  <div id="pg-firebase" style="display:none;">
+    <div class="card">
+      <div class="card-lbl">🔥 挿入する機能を選択</div>
+      <div id="fb-checks"></div>
+    </div>
+    <button class="btn btn-red btn-full" onclick="insertFirebase()" id="fb-btn">🔥 Firebaseを自動挿入</button>
+    <div id="fb-loading" style="display:none;"><div class="loading-wrap"><div class="loading-ico">🔥</div><div class="loading-txt">Firebase設定を挿入中...</div></div></div>
+    <div id="fb-done" style="display:none;" class="card" style="border-color:rgba(239,68,68,.3);">
+      <div style="font-size:12px;color:var(--red);font-weight:700;margin-bottom:6px;">🔥 Firebase挿入完了</div>
+      <div id="fb-note" class="ai-note"></div>
+      <a href="forge.html" class="btn btn-ghost btn-full" style="display:block;text-align:center;margin-top:8px;text-decoration:none;">⚡ FORGEで確認する</a>
+    </div>
+  </div>
+
+  <!-- ════ 強化パックタブ ════ -->
+  <div id="pg-pack" style="display:none;">
+    <div class="card">
+      <div class="card-lbl">📦 追加する機能を選択</div>
+      <div class="pack-grid" id="pack-grid"></div>
+    </div>
+    <button class="btn btn-grn btn-full" onclick="applyPacks()" id="pack-btn">📦 選択したパックを適用</button>
+    <div id="pack-loading" style="display:none;"><div class="loading-wrap"><div class="loading-ico">📦</div><div class="loading-txt">機能を追加中...</div></div></div>
+    <div id="pack-done" style="display:none;" class="card">
+      <div style="font-size:12px;color:var(--grn);font-weight:700;margin-bottom:6px;">✅ 強化パックを適用しました</div>
+      <div id="pack-note" class="ai-note"></div>
+      <a href="forge.html" class="btn btn-ghost btn-full" style="display:block;text-align:center;margin-top:8px;text-decoration:none;">⚡ FORGEで確認する</a>
+    </div>
+  </div>
+
+</div>
+<div id="toast"></div>
+
+<script>
+const EP='https://asia-northeast1-kensetsu-nippo-842a2.cloudfunctions.net/askAI';
+const KEY='HeartsHouse2026Key';
+const FB_CONFIG=`apiKey:"AIzaSyCVk2miG5TK1ffTofXLh0hHgeSbOvmIgZ8",authDomain:"kensetsu-nippo-842a2.firebaseapp.com",projectId:"kensetsu-nippo-842a2",storageBucket:"kensetsu-nippo-842a2.firebasestorage.app",messagingSenderId:"702880974315",appId:"1:702880974315:web:985321dc9180046629c5ae"`;
+
+var currentHTML='';
+var partialNewHTML='';
+var versionB='';
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+var _tt;
+function showToast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),3000);}
+async function callAI(prompt,search,schema){
+  var body={model:'gemini-2.5-flash',mode:'normal',prompt:prompt,useSearch:!!search};
+  if(schema)body.responseSchema=schema;
+  var r=await fetch(EP,{method:'POST',headers:{'Content-Type':'application/json','x-access-key':KEY},body:JSON.stringify(body)});
+  var d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  return d?.data?.text||d?.candidates?.[0]?.content?.parts?.[0]?.text||d?.text||'';
+}
+
+
+// Firestore + localStorageからHTMLを読み込む
+async function loadFromFirestore(){
+  try{
+    var fb=window.__fb;
+    if(fb&&fb.auth&&fb.auth.currentUser){
+      var uid=fb.auth.currentUser.uid;
+      var snap=await fb.getDoc(fb.doc(fb.db,'forge_sessions',uid));
+      if(snap.exists()&&snap.data().html){
+        var d=snap.data();
+        localStorage.setItem('FORGE_CURRENT_HTML',d.html);
+        localStorage.setItem('FORGE_TITLE',d.title||'');
+        return {html:d.html,title:d.title||''};
+      }
+    }
+  }catch(e){}
+  return {
+    html:localStorage.getItem('FORGE_CURRENT_HTML')||'',
+    title:localStorage.getItem('FORGE_TITLE')||''
+  };
+}
+
+// Firestoreに保存
+async function saveToFirestore(html,title){
+  localStorage.setItem('FORGE_CURRENT_HTML',html);
+  localStorage.setItem('FORGE_TITLE',title||'');
+  try{
+    var fb=window.__fb;
+    if(!fb||!fb.auth||!fb.auth.currentUser) return;
+    var uid=fb.auth.currentUser.uid;
+    await fb.setDoc(fb.doc(fb.db,'forge_sessions',uid),{
+      html:html,title:title||'',updatedAt:fb.serverTimestamp()
+    });
+  }catch(e){}
+}
+
+async function init(){
+  var data=await loadFromFirestore();
+  currentHTML=data.html;
+  var title=data.title||'未生成';
+  document.getElementById('app-title-lbl').textContent=title;
+  renderFBChecks();
+  renderPacks();
+}
+
+function goTab(name,btn){
+  ['partial','ab','firebase','pack'].forEach(n=>{
+    document.getElementById('pg-'+n).style.display=n===name?'block':'none';
+  });
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+}
+
+// ════ 部分修正 ════
+var partialChanges=[];
+async function applyPartial(){
+  if(!currentHTML){showToast('FORGEでアプリを生成してください');return;}
+  var req=document.getElementById('partial-req').value.trim();
+  if(!req){showToast('変更内容を入力してください');return;}
+  var scope=document.getElementById('partial-scope').value;
+  var btn=document.getElementById('partial-btn');
+  btn.disabled=true;
+  document.getElementById('partial-loading').style.display='block';
+  document.getElementById('partial-txt').textContent='修正箇所を特定中...';
+
+  var schema={type:'object',properties:{
+    changes:{type:'array',items:{type:'object',properties:{
+      target:{type:'string'},description:{type:'string'},
+      old_code:{type:'string'},new_code:{type:'string'}
+    }}},
+    full_html:{type:'string'},summary:{type:'string'}
+  },required:['changes','full_html','summary']};
+
+  try{
+    var prompt='あなたはWebアプリのコード修正専門AIです。\n\n'
+      +'ユーザーのリクエスト：「'+req+'」\n'
+      +'変更範囲：'+scope+'\n\n'
+      +'以下のHTMLの該当箇所だけを修正してください。\n'
+      +'変更した箇所の一覧（target・説明・変更前後のコード）と完全なHTMLを返してください。\n\n'
+      +'【HTML】\n'+currentHTML.slice(0,12000);
+    var raw=await callAI(prompt,false,schema);
+    var result=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    partialChanges=result.changes||[];
+    partialNewHTML=result.full_html||'';
+
+    document.getElementById('partial-diff-list').innerHTML=partialChanges.map(function(c){
+      return '<div class="diff-item">'
+        +'<div class="diff-file">📝 '+esc(c.target||'')+'</div>'
+        +'<div class="diff-detail">'+esc(c.description||'')+'</div>'
+        +'</div>';
+    }).join('');
+    document.getElementById('partial-loading').style.display='none';
+    document.getElementById('partial-result').style.display='block';
+    showToast(partialChanges.length+'箇所の変更を特定しました');
+  }catch(e){
+    document.getElementById('partial-loading').style.display='none';
+    showToast('エラー: '+e.message);
+  }
+  btn.disabled=false;
+}
+async function applyPartialFix(){
+  if(!partialNewHTML)return;
+  currentHTML=partialNewHTML;
+  await saveToFirestore(currentHTML,localStorage.getItem('FORGE_TITLE')||'');
+  document.getElementById('partial-result').style.display='none';
+  showToast('✅ 部分修正を適用しました');
+}
+function cancelPartial(){
+  document.getElementById('partial-result').style.display='none';
+  partialNewHTML='';
+}
+
+// ════ ABテスト ════
+async function generateB(){
+  if(!currentHTML){showToast('FORGEでアプリを生成してください');return;}
+  var req=document.getElementById('ab-req').value.trim();
+  if(!req){showToast('バージョンBの条件を入力してください');return;}
+  var btn=document.getElementById('ab-btn');btn.disabled=true;
+  document.getElementById('ab-loading').style.display='block';
+  document.getElementById('ab-compare').style.display='none';
+  try{
+    var prompt='以下のWebアプリのデザイン・スタイルを変えたバージョンBを作成してください。\n'
+      +'変更条件：「'+req+'」\n機能・テキスト・JavaScriptは変更しないこと。\n\n'
+      +'【元のHTML（バージョンA）】\n'+currentHTML.slice(0,12000)+'\n\n'
+      +'完全なHTMLを出力。マークダウン禁止。';
+    var result=await callAI(prompt,false);
+    var htmlMatch=result.match(/<!DOCTYPE[\s\S]*<\/html>/i)||result.match(/<html[\s\S]*<\/html>/i);
+    versionB=htmlMatch?htmlMatch[0]:result;
+
+    // 差分説明
+    var diffTxt=await callAI(
+      'バージョンAとBのデザインの違いを3点、簡潔に日本語で箇条書きにしてください。\nA：'+currentHTML.slice(0,1000)+'\nB：'+versionB.slice(0,1000),
+      false
+    );
+    document.getElementById('ab-a').srcdoc=currentHTML;
+    document.getElementById('ab-b').srcdoc=versionB;
+    document.getElementById('ab-diff-note').textContent=diffTxt;
+    document.getElementById('ab-loading').style.display='none';
+    document.getElementById('ab-compare').style.display='block';
+    showToast('✅ バージョンBを生成しました');
+  }catch(e){
+    document.getElementById('ab-loading').style.display='none';
+    showToast('エラー: '+e.message);
+  }
+  btn.disabled=false;
+}
+function keepA(){showToast('バージョンAを保持しました');}
+async function keepB(){
+  if(!versionB)return;
+  currentHTML=versionB;
+  await saveToFirestore(currentHTML,localStorage.getItem('FORGE_TITLE')||'');
+  showToast('✅ バージョンBを採用しました');
+}
+
+// ════ Firebase挿入 ════
+const FB_FEATURES=[
+  {id:'auth',name:'ログイン画面',desc:'メール/パスワード認証・ログイン画面の追加',checked:true},
+  {id:'admin',name:'管理者パネル',desc:'ユーザー登録・一覧・削除（isAdmin判定付き）',checked:true},
+  {id:'firestore',name:'Firestore連携',desc:'データの保存・読み込み基盤の追加',checked:true},
+  {id:'realtime',name:'リアルタイム同期',desc:'onSnapshotで即時反映',checked:false},
+];
+function renderFBChecks(){
+  document.getElementById('fb-checks').innerHTML=FB_FEATURES.map(function(f){
+    return '<div class="fb-check">'
+      +'<input type="checkbox" id="fb-'+f.id+'"'+(f.checked?' checked':'')+'>'
+      +'<div class="fb-check-info">'
+      +'<div class="fb-check-name">'+esc(f.name)+'</div>'
+      +'<div class="fb-check-desc">'+esc(f.desc)+'</div>'
+      +'</div></div>';
+  }).join('');
+}
+async function insertFirebase(){
+  if(!currentHTML){showToast('FORGEでアプリを生成してください');return;}
+  var selected=FB_FEATURES.filter(f=>document.getElementById('fb-'+f.id)&&document.getElementById('fb-'+f.id).checked);
+  if(!selected.length){showToast('機能を選択してください');return;}
+  var btn=document.getElementById('fb-btn');btn.disabled=true;
+  document.getElementById('fb-loading').style.display='block';
+  document.getElementById('fb-done').style.display='none';
+
+  var fbCode=`<script type="module">
+import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged,createUserWithEmailAndPassword}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import{getFirestore,collection,doc,setDoc,getDoc,getDocs,deleteDoc,serverTimestamp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+const app=initializeApp({${FB_CONFIG}});
+const auth=getAuth(app);const db=getFirestore(app);
+window.__fb={auth,db,signIn:(e,p)=>signInWithEmailAndPassword(auth,e,p),signOut:()=>signOut(auth),
+createUser:(e,p)=>createUserWithEmailAndPassword(auth,e,p),
+doc:(...a)=>doc(...a),setDoc,getDoc,getDocs,deleteDoc,collection,serverTimestamp};
+onAuthStateChanged(auth,async function(user){
+  if(user){document.getElementById('login-screen').style.display='none';document.getElementById('main-app').style.display='block';
+    try{const snap=await getDoc(doc(db,'users',user.uid));
+    if(!snap.exists())await setDoc(doc(db,'users',user.uid),{uid:user.uid,email:user.email,isAdmin:false,createdAt:serverTimestamp()});
+    if(snap.exists()&&snap.data().isAdmin)document.getElementById('admin-btn')&&(document.getElementById('admin-btn').style.display='block');
+    }catch(e){}
+  }else{document.getElementById('login-screen').style.display='flex';document.getElementById('main-app').style.display='none';}
+});
+<\/script>`;
+
+  var prompt='以下のWebアプリにFirebase認証・Firestoreを追加してください。\n\n'
+    +'【追加する機能】\n'+selected.map(f=>'・'+f.name+': '+f.desc).join('\n')+'\n\n'
+    +'【Firebase設定コード（<body>直後に挿入済み）】\n'+fbCode+'\n\n'
+    +'【実装ルール】\n'
+    +'・ログイン画面をdiv#login-screenとして追加（display:flex）\n'
+    +'・メインコンテンツをdiv#main-appでラップ（display:none）\n'
+    +'・window.__fb.signIn()でログイン処理\n'
+    +'・isAdmin:trueのユーザーのみ管理者ボタンを表示\n'
+    +'・管理者パネル：メールアドレス・仮パスワード入力・自動生成ボタン・ユーザー一覧・削除\n'
+    +'・既存の機能・デザインは維持すること\n\n'
+    +'【元のHTML】\n'+currentHTML.slice(0,10000)+'\n\n完全なHTMLを出力。マークダウン禁止。';
+
+  try{
+    var result=await callAI(prompt,false);
+    var htmlMatch=result.match(/<!DOCTYPE[\s\S]*<\/html>/i)||result.match(/<html[\s\S]*<\/html>/i);
+    var newHTML=htmlMatch?htmlMatch[0]:result;
+    currentHTML=newHTML;
+    await saveToFirestore(currentHTML,localStorage.getItem('FORGE_TITLE')||'');
+    document.getElementById('fb-note').textContent=selected.map(f=>'・'+f.name).join('\n')+'を挿入しました。FORGEで動作確認してください。';
+    document.getElementById('fb-loading').style.display='none';
+    document.getElementById('fb-done').style.display='block';
+    showToast('✅ Firebaseを挿入しました');
+  }catch(e){
+    document.getElementById('fb-loading').style.display='none';
+    showToast('エラー: '+e.message);
+  }
+  btn.disabled=false;
+}
+
+// ════ 強化パック ════
+const PACKS=[
+  {id:'loading',ico:'⏳',name:'ローディング',desc:'クルクル＋フェードイン',on:true},
+  {id:'toast',ico:'💬',name:'トースト通知',desc:'右下ポップアップ通知',on:true},
+  {id:'responsive',ico:'📱',name:'スマホ最適化',desc:'viewport・フォント・余白',on:true},
+  {id:'dark',ico:'🌙',name:'ダークモード',desc:'切り替えトグル付き',on:false},
+  {id:'localstorage',ico:'💾',name:'localStorage保存',desc:'フォームの値を自動保存',on:false},
+  {id:'print',ico:'🖨',name:'印刷/PDF',desc:'印刷ボタンを追加',on:false},
+  {id:'errorhandling',ico:'🛡',name:'エラー処理強化',desc:'try-catchとエラー表示',on:true},
+  {id:'copy',ico:'📋',name:'コピーボタン',desc:'テキスト要素にコピーボタン',on:false},
+];
+function renderPacks(){
+  document.getElementById('pack-grid').innerHTML=PACKS.map(function(p){
+    return '<div class="pack-item'+(p.on?' on':'')+'" id="pk-'+p.id+'" onclick="togglePack(\''+p.id+'\')">'
+      +'<div class="pack-ico">'+p.ico+'</div>'
+      +'<div class="pack-nm">'+esc(p.name)+'</div>'
+      +'<div class="pack-desc">'+esc(p.desc)+'</div>'
+      +'</div>';
+  }).join('');
+}
+function togglePack(id){
+  var el=document.getElementById('pk-'+id);
+  var p=PACKS.find(p=>p.id===id);
+  p.on=!p.on;el.classList.toggle('on',p.on);
+}
+async function applyPacks(){
+  if(!currentHTML){showToast('FORGEでアプリを生成してください');return;}
+  var selected=PACKS.filter(p=>p.on);
+  if(!selected.length){showToast('パックを選択してください');return;}
+  var btn=document.getElementById('pack-btn');btn.disabled=true;
+  document.getElementById('pack-loading').style.display='block';
+  document.getElementById('pack-done').style.display='none';
+
+  var prompt='以下のWebアプリに選択した機能を追加してください。\n\n'
+    +'【追加する機能】\n'+selected.map(p=>'・'+p.name+': '+p.desc).join('\n')+'\n\n'
+    +'【追加ルール】\n'
+    +'・既存のデザイン・機能は維持すること\n'
+    +'・追加コードはクリーンに書くこと\n'
+    +'・ローディング：body直後にオーバーレイdivを追加\n'
+    +'・トースト：右下固定position、3秒で消える\n'
+    +'・ダークモード：ヘッダーにトグルボタンを追加\n'
+    +'・localStorage：フォームのinput/selectをonchangeで保存\n\n'
+    +'【元のHTML】\n'+currentHTML.slice(0,12000)+'\n\n完全なHTMLを出力。マークダウン禁止。';
+
+  try{
+    var result=await callAI(prompt,false);
+    var htmlMatch=result.match(/<!DOCTYPE[\s\S]*<\/html>/i)||result.match(/<html[\s\S]*<\/html>/i);
+    var newHTML=htmlMatch?htmlMatch[0]:result;
+    currentHTML=newHTML;
+    await saveToFirestore(currentHTML,localStorage.getItem('FORGE_TITLE')||'');
+    document.getElementById('pack-note').textContent=selected.map(p=>'✅ '+p.name).join('\n')+'を追加しました。';
+    document.getElementById('pack-loading').style.display='none';
+    document.getElementById('pack-done').style.display='block';
+    showToast('✅ '+selected.length+'個のパックを適用しました');
+  }catch(e){
+    document.getElementById('pack-loading').style.display='none';
+    showToast('エラー: '+e.message);
+  }
+  btn.disabled=false;
+}
+
+init();
+</script>
+</body>
+</html>
