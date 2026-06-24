@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>ERROR LAB — エラー解析修正</title>
+<style>
+:root{
+  --bg:#0d0d14;--bg2:#13131e;--bg3:#1a1a28;
+  --card:#1a1a28;--bor:rgba(255,255,255,.08);--bor2:rgba(255,255,255,.14);
+  --red:#ef4444;--red2:#dc2626;--red-xl:rgba(239,68,68,.1);
+  --green:#10b981;--green2:#34d399;--green-xl:rgba(16,185,129,.1);
+  --blue:#3b82f6;--blue-xl:rgba(59,130,246,.1);
+  --gold:#f59e0b;--gold-xl:rgba(245,158,11,.1);
+  --purple:#7c3aed;--purple2:#a855f7;
+  --txt:#f0f0f8;--txt2:#a0a0c0;--txt3:#505070;
+  --r:12px;--r2:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--txt);font-family:'Hiragino Sans','Noto Sans JP',monospace;min-height:100vh;}
+
+/* ヘッダー */
+.hdr{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--bor);background:var(--bg2);}
+.hdr-icon{font-size:22px;}
+.hdr-title{font-size:16px;font-weight:900;letter-spacing:2px;background:linear-gradient(90deg,var(--red),var(--purple2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hdr-sub{font-size:9px;color:var(--txt3);letter-spacing:1px;}
+#close-btn{margin-left:auto;padding:6px 12px;border-radius:var(--r2);border:1.5px solid var(--bor2);background:transparent;color:var(--txt2);font-size:11px;cursor:pointer;display:none;}
+
+/* メインレイアウト */
+.main{padding:14px 16px;max-width:700px;margin:0 auto;}
+
+/* ステータス */
+.status-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:var(--r2);border:1.5px solid var(--bor);background:var(--bg3);margin-bottom:12px;font-size:11px;}
+.status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.s-idle{background:var(--txt3);}
+.s-running{background:var(--gold);animation:blink .8s infinite;}
+.s-ok{background:var(--green);}
+.s-err{background:var(--red);}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.2;}}
+
+/* iframe sandbox */
+.sandbox-wrap{background:#fff;border-radius:var(--r);overflow:hidden;border:2px solid var(--bor2);margin-bottom:12px;position:relative;}
+#sandbox{width:100%;height:300px;border:none;display:block;}
+.sandbox-overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);backdrop-filter:blur(2px);}
+.sandbox-overlay.show{display:flex;}
+
+/* エラーリスト */
+.err-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
+.err-item{background:var(--red-xl);border:1.5px solid rgba(239,68,68,.25);border-radius:var(--r2);padding:10px 12px;}
+.err-item-hdr{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+.err-num{width:18px;height:18px;border-radius:50%;background:var(--red2);color:#fff;font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.err-type{font-size:10px;font-weight:800;color:var(--red);}
+.err-loc{font-size:10px;color:var(--txt3);}
+.err-msg{font-size:11px;color:var(--txt2);font-family:monospace;line-height:1.6;padding-left:24px;word-break:break-all;}
+
+/* 解析パネル */
+.analysis-card{background:var(--card);border:1.5px solid var(--bor2);border-radius:var(--r);padding:14px;margin-bottom:12px;}
+.analysis-label{font-size:9px;font-weight:800;letter-spacing:1px;margin-bottom:10px;}
+.analysis-body{font-size:12px;color:var(--txt2);line-height:1.8;white-space:pre-wrap;}
+
+/* 修正コードビュー */
+.code-view{background:#0a0a12;border:1.5px solid rgba(16,185,129,.25);border-radius:var(--r2);padding:12px;font-size:10px;font-family:monospace;color:var(--green2);line-height:1.7;max-height:200px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;margin-bottom:10px;}
+
+/* ボタン */
+.btn{padding:11px 16px;border-radius:var(--r2);border:none;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;transition:.15s;}
+.btn:active{transform:scale(.97);}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn-red{background:linear-gradient(135deg,var(--red2),var(--red));color:#fff;}
+.btn-green{background:linear-gradient(135deg,var(--green),#059669);color:#fff;}
+.btn-purple{background:linear-gradient(135deg,var(--purple),var(--purple2));color:#fff;}
+.btn-ghost{background:var(--bg3);border:1.5px solid var(--bor2);color:var(--txt2);}
+.btn-full{width:100%;}
+.btn-row{display:flex;gap:8px;}
+
+/* 入力モード */
+.input-area{background:var(--bg3);border:1.5px solid var(--bor);border-radius:var(--r2);padding:0;overflow:hidden;margin-bottom:10px;}
+.input-area textarea{width:100%;padding:12px;background:transparent;border:none;color:var(--green2);font-family:monospace;font-size:11px;resize:none;outline:none;min-height:120px;line-height:1.6;}
+.input-area-footer{padding:8px 12px;border-top:1px solid var(--bor);display:flex;align-items:center;justify-content:space-between;}
+.char-count{font-size:10px;color:var(--txt3);}
+
+/* 試行カウント */
+.attempt-badge{padding:3px 8px;border-radius:6px;font-size:9px;font-weight:800;background:var(--gold-xl);color:var(--gold);border:1px solid rgba(245,158,11,.3);}
+
+/* トースト */
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1.5px solid var(--bor2);color:var(--txt);padding:10px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:9999;pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap;}
+#toast.show{opacity:1;}
+
+/* セクション区切り */
+.section-hdr{font-size:9px;font-weight:800;letter-spacing:2px;color:var(--txt3);margin:14px 0 8px;display:flex;align-items:center;gap:8px;}
+.section-hdr::after{content:'';flex:1;height:1px;background:var(--bor);}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-icon">🔬</div>
+  <div>
+    <div class="hdr-title">ERROR LAB</div>
+    <div class="hdr-sub">GEMINI 2.5 FLASH × エラー解析修正</div>
+  </div>
+  <button id="close-btn" onclick="returnToForge()">✕ FORGEに戻す</button>
+</div>
+
+<div class="main">
+
+  <!-- HTMLを受け取るか手動入力 -->
+  <div id="input-section">
+    <div class="section-hdr">HTMLコードを入力</div>
+    <div class="input-area">
+      <textarea id="html-input" placeholder="解析したいHTMLコードをここに貼り付けてください...&#10;&#10;FORGEから自動で渡される場合は自動的に解析が始まります。"></textarea>
+      <div class="input-area-footer">
+        <span class="char-count" id="char-count">0文字</span>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-ghost" onclick="clearInput()">クリア</button>
+          <button class="btn btn-red" onclick="startAnalysis()" id="analyze-btn">🔬 解析開始</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ステータスバー -->
+  <div class="status-bar" id="status-bar">
+    <div class="status-dot s-idle" id="s-dot"></div>
+    <span id="s-txt" style="color:var(--txt3);">HTMLを貼り付けて解析を開始してください</span>
+    <span class="attempt-badge" id="attempt-badge" style="display:none;">修正 0回</span>
+  </div>
+
+  <!-- サンドボックス iframe -->
+  <div class="sandbox-wrap" id="sandbox-wrap" style="display:none;">
+    <div class="section-hdr" style="padding:8px 12px 0;margin:0 0 0;">プレビュー</div>
+    <iframe id="sandbox" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+    <div class="sandbox-overlay" id="sandbox-overlay">
+      <div style="text-align:center;">
+        <div style="font-size:28px;margin-bottom:8px;animation:blink .8s infinite;">🔬</div>
+        <div style="font-size:12px;color:#fff;">エラーを監視中...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- エラー一覧 -->
+  <div id="err-section" style="display:none;">
+    <div class="section-hdr">検出されたエラー <span id="err-count-badge" style="color:var(--red);"></span></div>
+    <div class="err-list" id="err-list"></div>
+    <div class="btn-row">
+      <button class="btn btn-purple btn-full" onclick="runGeminiAnalysis()" id="gemini-btn">⚡ Geminiで解析・修正</button>
+    </div>
+  </div>
+
+  <!-- 正常時 -->
+  <div id="ok-section" style="display:none;">
+    <div class="analysis-card" style="border-color:rgba(16,185,129,.3);background:var(--green-xl);">
+      <div class="analysis-label" style="color:var(--green2);">✅ エラーなし</div>
+      <div class="analysis-body" style="color:var(--green2);">3秒間の監視でエラーは検出されませんでした。</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost btn-full" onclick="runVisualCheck()" id="visual-btn">📸 見た目をAIチェック</button>
+    </div>
+  </div>
+
+  <!-- Gemini解析結果 -->
+  <div id="analysis-section" style="display:none;">
+    <div class="section-hdr">AI解析レポート</div>
+    <div class="analysis-card" style="border-color:rgba(124,58,237,.3);">
+      <div class="analysis-label" style="color:var(--purple2);">🔬 エラー解析</div>
+      <div class="analysis-body" id="analysis-text"></div>
+    </div>
+
+    <div class="section-hdr">修正済みコード</div>
+    <div class="code-view" id="fixed-code"></div>
+    <div class="btn-row">
+      <button class="btn btn-green" onclick="applyFix()" id="apply-btn">✅ この修正を適用</button>
+      <button class="btn btn-ghost" onclick="copyFixed()">📋 コピー</button>
+      <button class="btn btn-ghost" onclick="runGeminiAnalysis()">🔄 再解析</button>
+    </div>
+  </div>
+
+  <!-- 見た目チェック結果 -->
+  <div id="visual-section" style="display:none;">
+    <div class="section-hdr">見た目チェック結果</div>
+    <div class="analysis-card" id="visual-card">
+      <div class="analysis-label" id="visual-label"></div>
+      <div class="analysis-body" id="visual-text"></div>
+    </div>
+    <div id="visual-fix-row" class="btn-row" style="display:none;">
+      <button class="btn btn-purple btn-full" onclick="applyVisualFix()">⚡ 見た目を修正</button>
+    </div>
+  </div>
+
+</div>
+
+<div style="position:fixed;bottom:16px;right:16px;z-index:100;">
+  <a href="forge.html" style="display:block;padding:10px 14px;border-radius:20px;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;font-size:11px;font-weight:700;text-decoration:none;box-shadow:0 4px 12px rgba(124,58,237,.4);">⚡ FORGEで確認</a>
+</div>
+<div id="toast"></div>
+
+<script>
+const EP='https://asia-northeast1-kensetsu-nippo-842a2.cloudfunctions.net/askAI';
+const KEY='HeartsHouse2026Key';
+const MAX_FIX=3;
+
+var _currentHTML='';
+var _fixedHTML='';
+var _visualFixedHTML='';
+var _errors=[];
+var _fixCount=0;
+var _errorTimer=null;
+var _fromForge=false;
+
+// ── 初期化：FORGEからの受け取り ──
+window.addEventListener('message',function(e){
+  // FORGEから HTML を受け取る
+  if(e.data&&e.data.type==='ERRORLAB_INIT'){
+    _fromForge=true;
+    document.getElementById('close-btn').style.display='block';
+    loadHTML(e.data.html,e.data.title||'');
+  }
+  // サンドボックスからのエラー
+  if(e.data&&e.data.type==='EL_ERR'){
+    onSandboxError(e.data);
+  }
+});
+
+// URLパラメータからも受け取れる（将来の拡張用）
+window.addEventListener('DOMContentLoaded',function(){
+  var ta=document.getElementById('html-input');
+  ta.addEventListener('input',function(){
+    document.getElementById('char-count').textContent=ta.value.length+'文字';
+  });
+});
+
+function loadHTML(html,title){
+  _currentHTML=html;
+  document.getElementById('html-input').value=html;
+  document.getElementById('char-count').textContent=html.length+'文字';
+  if(title) showToast('📥 「'+title+'」を受け取りました');
+  startAnalysis();
+}
+
+// ── 解析開始 ──
+function startAnalysis(){
+  var html=document.getElementById('html-input').value.trim();
+  if(!html){showToast('HTMLを入力してください');return;}
+  _currentHTML=html;
+  _errors=[];
+  _fixCount=0;
+
+  setStatus('running','🔬 サンドボックスで実行中...');
+  document.getElementById('sandbox-wrap').style.display='block';
+  document.getElementById('sandbox-overlay').classList.add('show');
+  document.getElementById('err-section').style.display='none';
+  document.getElementById('ok-section').style.display='none';
+  document.getElementById('analysis-section').style.display='none';
+  document.getElementById('visual-section').style.display='none';
+  document.getElementById('attempt-badge').style.display='none';
+
+  // エラーウォッチャー注入
+  var watcher='<script>'
+    +'window.onerror=function(msg,src,line,col,err){'
+    +'window.parent.postMessage({type:"EL_ERR",msg:msg,line:line||0,col:col||0,stack:err&&err.stack||""},"*");'
+    +'return true;};'
+    +'window.addEventListener("unhandledrejection",function(e){'
+    +'var m=e.reason&&e.reason.message||String(e.reason)||"Promise rejection";'
+    +'window.parent.postMessage({type:"EL_ERR",msg:m,line:0,col:0,stack:""},"*");});'
+    +'console.error=function(){window.parent.postMessage({type:"EL_ERR",msg:Array.from(arguments).join(" "),line:0,col:0,stack:""},"*");};'
+    +'<\/script>';
+
+  var injected=_currentHTML.includes('<head>')
+    ?_currentHTML.replace('<head>','<head>'+watcher)
+    :watcher+_currentHTML;
+  document.getElementById('sandbox').srcdoc=injected;
+
+  // 4秒監視して判定
+  clearTimeout(_errorTimer);
+  _errorTimer=setTimeout(function(){
+    document.getElementById('sandbox-overlay').classList.remove('show');
+    if(_errors.length===0){
+      setStatus('ok','✅ エラー検出なし（4秒間監視）');
+      document.getElementById('ok-section').style.display='block';
+    } else {
+      showErrors();
+    }
+  },4000);
+}
+
+function onSandboxError(data){
+  // 重複除去
+  var dup=_errors.find(function(e){return e.msg===data.msg&&e.line===data.line;});
+  if(dup) return;
+  _errors.push(data);
+}
+
+function showErrors(){
+  setStatus('err','❌ '+_errors.length+'件のエラーを検出');
+  var list=document.getElementById('err-list');
+  list.innerHTML=_errors.map(function(e,i){
+    return '<div class="err-item">'
+      +'<div class="err-item-hdr">'
+      +'<div class="err-num">'+(i+1)+'</div>'
+      +'<div class="err-type">'+getErrType(e.msg)+'</div>'
+      +(e.line?'<div class="err-loc">line '+e.line+(e.col?' col '+e.col:'')+'</div>':'')
+      +'</div>'
+      +'<div class="err-msg">'+esc(e.msg)+'</div>'
+      +(e.stack?'<div class="err-msg" style="color:var(--txt3);font-size:9px;margin-top:4px;">'+esc(e.stack.split('\n').slice(0,2).join('\n'))+'</div>':'')
+      +'</div>';
+  }).join('');
+  document.getElementById('err-count-badge').textContent=_errors.length+'件';
+  document.getElementById('err-section').style.display='block';
+}
+
+function getErrType(msg){
+  if(/TypeError/i.test(msg)) return 'TypeError';
+  if(/ReferenceError/i.test(msg)) return 'ReferenceError';
+  if(/SyntaxError/i.test(msg)) return 'SyntaxError';
+  if(/RangeError/i.test(msg)) return 'RangeError';
+  if(/Promise/i.test(msg)) return 'PromiseError';
+  return 'Error';
+}
+
+// ── Gemini解析・修正 ──
+async function runGeminiAnalysis(){
+  if(_fixCount>=MAX_FIX){
+    showToast('⚠️ 修正試行が'+MAX_FIX+'回に達しました。HTMLを最初から作り直してください。');
+    return;
+  }
+  _fixCount++;
+  updateAttemptBadge();
+
+  var btn=document.getElementById('gemini-btn');
+  btn.textContent='⚡ Geminiが解析中...';btn.disabled=true;
+  setStatus('running','⚡ Gemini 2.5 Flashが解析・修正中... （'+_fixCount+'/'+ MAX_FIX+'回目）');
+
+  var errSummary=_errors.map(function(e,i){
+    return (i+1)+'. '+(getErrType(e.msg))+': '+e.msg+(e.line?' [line '+e.line+']':'')+
+      (e.stack?'\n   Stack: '+e.stack.split('\n').slice(0,2).join('\n   '):'');
+  }).join('\n\n');
+
+  var compressed=compressHTML(_currentHTML).slice(0,12000);
+
+  var prompt='あなたはJavaScript・HTML・CSSのエキスパートエンジニアです。\n\n'
+    +'以下のHTMLアプリに'+_errors.length+'件のエラーが発生しています。\n\n'
+    +'【検出されたエラー一覧】\n'+errSummary+'\n\n'
+    +'【修正してほしいこと】\n'
+    +'1. 各エラーの根本原因を特定する\n'
+    +'2. エラーを全て修正した完全なHTMLを生成する\n'
+    +'3. 元のデザイン・機能は100%維持すること\n'
+    +'4. 修正した箇所と理由を日本語で説明する\n\n'
+    +'【元のHTML（'+compressed.length+'文字）】\n'+compressed;
+
+  try{
+    var res=await fetch(EP,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-access-key':KEY},
+      body:JSON.stringify({
+        model:'gemini-2.5-flash',mode:'normal',
+        prompt:prompt,
+        useSearch:false,useCache:true,
+        responseSchema:{
+          type:'object',
+          properties:{
+            root_cause:{type:'string'},
+            fix_summary:{type:'string'},
+            fixed_points:{type:'array',items:{type:'string'}},
+            html_code:{type:'string'},
+            confidence:{type:'string'}
+          },
+          required:['root_cause','fix_summary','html_code','confidence']
+        }
+      })
+    });
+    var d=await res.json().catch(function(){return{};});
+    var raw=d?.data?.text||d?.candidates?.[0]?.content?.parts?.[0]?.text||d?.text||'';
+    var parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
+
+    _fixedHTML=parsed.html_code||'';
+
+    // 解析レポート表示
+    var points=(parsed.fixed_points||[]).map(function(p,i){return '  '+(i+1)+'. '+p;}).join('\n');
+    document.getElementById('analysis-text').textContent=
+      '■ 根本原因\n'+( parsed.root_cause||'')+'\n\n'
+      +'■ 修正サマリー\n'+(parsed.fix_summary||'')+'\n\n'
+      +(points?'■ 修正箇所\n'+points+'\n\n':'')
+      +'■ 修正精度：'+(parsed.confidence||'不明');
+
+    // コードプレビュー（先頭500文字）
+    document.getElementById('fixed-code').textContent=
+      _fixedHTML.slice(0,600)+((_fixedHTML.length>600)?'\n... （'+_fixedHTML.length+'文字）':'');
+
+    document.getElementById('analysis-section').style.display='block';
+    setStatus('ok','✅ Geminiが修正案を生成しました（'+_fixCount+'回目）');
+    showToast('✅ 修正案が完成しました');
+
+  }catch(e){
+    setStatus('err','❌ 解析エラー: '+e.message);
+    showToast('❌ '+e.message);
+  }
+  btn.textContent='⚡ Geminiで解析・修正';btn.disabled=false;
+}
+
+// ── 修正を適用 ──
+function applyFix(){
+  if(!_fixedHTML){showToast('修正コードがありません');return;}
+  _currentHTML=_fixedHTML;
+  document.getElementById('html-input').value=_currentHTML;
+  document.getElementById('char-count').textContent=_currentHTML.length+'文字';
+  // FORGEとFirestoreに送り返す
+  localStorage.setItem('FORGE_CURRENT_HTML',_currentHTML);
+  try{
+    var fb=window.__fb;
+    if(fb&&fb.auth&&fb.auth.currentUser){
+      fb.setDoc(fb.doc(fb.db,'forge_sessions',fb.auth.currentUser.uid),
+        {html:_currentHTML,title:localStorage.getItem('FORGE_TITLE')||'',updatedAt:fb.serverTimestamp()});
+    }
+  }catch(ex){}
+  // 再度サンドボックスで実行して確認
+  document.getElementById('analysis-section').style.display='none';
+  startAnalysis();
+  showToast('✅ 修正を適用しました。再度確認中...');
+}
+
+// ── 見た目チェック ──
+async function runVisualCheck(){
+  var vbtn=document.getElementById('visual-btn');
+  vbtn.textContent='📸 撮影中...';vbtn.disabled=true;
+  setStatus('running','📸 スクリーンショット撮影中...');
+
+  try{
+    if(!window.html2canvas){
+      await new Promise(function(resolve,reject){
+        var s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+        s.onload=resolve;s.onerror=reject;document.head.appendChild(s);
+      });
+    }
+    var iframe=document.getElementById('sandbox');
+    var canvas=await window.html2canvas(iframe.contentDocument.body,
+      {useCORS:true,allowTaint:true,scale:0.6,logging:false});
+    var base64=canvas.toDataURL('image/jpeg',0.8);
+
+    setStatus('running','🤖 Gemini Visionが見た目を分析中...');
+
+    var res=await fetch(EP,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-access-key':KEY},
+      body:JSON.stringify({
+        model:'gemini-2.5-flash',mode:'normal',
+        prompt:'このWebアプリのスクリーンショットを分析してください。\n\n'
+          +'チェック項目：\n'
+          +'1. レイアウトの崩れ（要素が重なっている・はみ出しているなど）\n'
+          +'2. テキストの可読性（文字が小さすぎる・見えないなど）\n'
+          +'3. ボタン・入力フォームの使いやすさ\n'
+          +'4. モバイル表示での問題\n'
+          +'5. 全体的な美観\n\n'
+          +'問題があれば具体的に指摘し、修正版HTMLを生成してください。',
+        useSearch:false,useCache:false,
+        mediaContents:[{type:'image/jpeg',base64:base64}],
+        responseSchema:{
+          type:'object',
+          properties:{
+            has_issues:{type:'boolean'},
+            score:{type:'string'},
+            issues:{type:'array',items:{type:'string'}},
+            html_code:{type:'string'},
+            summary:{type:'string'}
+          },
+          required:['has_issues','score','summary']
+        }
+      })
+    });
+    var d=await res.json().catch(function(){return{};});
+    var raw=d?.data?.text||d?.candidates?.[0]?.content?.parts?.[0]?.text||d?.text||'';
+    var result=JSON.parse(raw.replace(/```json|```/g,'').trim());
+
+    var card=document.getElementById('visual-card');
+    var label=document.getElementById('visual-label');
+    var text=document.getElementById('visual-text');
+
+    if(result.has_issues){
+      card.style.borderColor='rgba(245,158,11,.3)';
+      card.style.background='var(--gold-xl)';
+      label.style.color='var(--gold)';
+      label.textContent='📸 見た目の問題を検出 — 品質スコア：'+(result.score||'?');
+      var issueList=(result.issues||[]).map(function(i,n){return (n+1)+'. '+i;}).join('\n');
+      text.textContent=issueList||result.summary||'';
+      _visualFixedHTML=result.html_code||'';
+      if(_visualFixedHTML){
+        document.getElementById('visual-fix-row').style.display='flex';
+      }
+      setStatus('err','📸 見た目の問題あり');
+    }else{
+      card.style.borderColor='rgba(16,185,129,.3)';
+      card.style.background='var(--green-xl)';
+      label.style.color='var(--green2)';
+      label.textContent='📸 見た目チェック完了 — 品質スコア：'+(result.score||'?');
+      text.textContent=result.summary||'問題は検出されませんでした';
+      document.getElementById('visual-fix-row').style.display='none';
+      setStatus('ok','✅ 見た目の問題なし');
+    }
+    document.getElementById('visual-section').style.display='block';
+
+  }catch(e){
+    showToast('📸 取得失敗: '+e.message);
+    setStatus('ok','✅ 正常動作中');
+  }
+  vbtn.textContent='📸 見た目をAIチェック';vbtn.disabled=false;
+}
+
+function applyVisualFix(){
+  if(!_visualFixedHTML){return;}
+  _currentHTML=_visualFixedHTML;
+  document.getElementById('html-input').value=_currentHTML;
+  document.getElementById('char-count').textContent=_currentHTML.length+'文字';
+  document.getElementById('visual-section').style.display='none';
+  startAnalysis();
+  showToast('✅ 見た目を修正しました。再確認中...');
+}
+
+// ── FORGEに修正済みHTMLを返す ──
+function returnToForge(){
+  var html=_currentHTML;
+  if(window.opener){
+    window.opener.postMessage({type:'ERRORLAB_RESULT',html:html},'*');
+    window.close();
+  } else if(window.parent!==window){
+    window.parent.postMessage({type:'ERRORLAB_RESULT',html:html},'*');
+  } else {
+    copyText(html);
+    showToast('📋 HTMLをコピーしました（FORGEに貼り付けてください）');
+  }
+}
+
+// ── ユーティリティ ──
+function setStatus(type,msg){
+  var dot=document.getElementById('s-dot');
+  var txt=document.getElementById('s-txt');
+  dot.className='status-dot s-'+type;
+  txt.textContent=msg;
+  txt.style.color={idle:'var(--txt3)',running:'var(--gold)',ok:'var(--green2)',err:'var(--red)'}[type]||'var(--txt2)';
+}
+
+function updateAttemptBadge(){
+  var b=document.getElementById('attempt-badge');
+  b.style.display='block';
+  b.textContent='修正 '+_fixCount+'/'+MAX_FIX+'回';
+  b.style.background=_fixCount>=MAX_FIX?'var(--red-xl)':'var(--gold-xl)';
+  b.style.color=_fixCount>=MAX_FIX?'var(--red)':'var(--gold)';
+}
+
+function clearInput(){
+  document.getElementById('html-input').value='';
+  document.getElementById('char-count').textContent='0文字';
+  document.getElementById('sandbox-wrap').style.display='none';
+  document.getElementById('err-section').style.display='none';
+  document.getElementById('ok-section').style.display='none';
+  document.getElementById('analysis-section').style.display='none';
+  document.getElementById('visual-section').style.display='none';
+  setStatus('idle','HTMLを貼り付けて解析を開始してください');
+  _currentHTML='';_errors=[];_fixCount=0;_fixedHTML='';
+}
+
+function copyFixed(){
+  if(!_fixedHTML){showToast('修正コードがありません');return;}
+  copyText(_fixedHTML);
+}
+function copyText(t){
+  if(navigator.clipboard) navigator.clipboard.writeText(t).then(function(){showToast('📋 コピーしました');});
+}
+function compressHTML(html){
+  return html.replace(/<!--[\s\S]*?-->/g,'').replace(/\n\s*\n/g,'\n').replace(/[ \t]+/g,' ').trim();
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+var _tt;
+function showToast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(_tt);_tt=setTimeout(function(){t.classList.remove('show');},3000);
+}
+</script>
+</body>
+</html>
