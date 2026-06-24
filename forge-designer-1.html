@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>FORGE DESIGNER</title>
+<style>
+:root{
+  --bg:#0a0a0f;--bg2:#111118;--bg3:#18181f;
+  --card:#18181f;--bor:rgba(255,200,80,.1);--bor2:rgba(255,200,80,.22);
+  --gold:#f0b830;--gold2:#d4960a;--gold-xl:rgba(240,184,48,.12);
+  --pur:#a855f7;--pur2:#7c3aed;--pur-xl:rgba(168,85,247,.12);
+  --grn:#10b981;--red:#ef4444;
+  --txt:#f5f0e8;--txt2:#b0a080;--txt3:#706040;
+  --r:12px;--r2:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--txt);font-family:'Hiragino Sans','Noto Sans JP',sans-serif;min-height:100vh;}
+.hdr{background:linear-gradient(135deg,#1a0a2e,#0a1a0a);border-bottom:1.5px solid var(--bor);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
+.hdr-title{font-size:16px;font-weight:900;background:linear-gradient(90deg,var(--gold),var(--pur));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.nav-links{display:flex;gap:5px;}
+.nav-btn{padding:5px 10px;border-radius:20px;border:1.5px solid var(--bor2);background:transparent;color:var(--txt2);font-size:10px;cursor:pointer;text-decoration:none;}
+.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--bor);}
+.tab{flex:1;padding:10px 4px;border:none;background:none;color:var(--txt3);font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;}
+.tab.on{color:var(--gold);border-bottom:2px solid var(--gold);margin-bottom:-1px;}
+.main{padding:14px;max-width:600px;margin:0 auto;}
+.card{background:var(--card);border:1.5px solid var(--bor);border-radius:var(--r);padding:14px;margin-bottom:12px;}
+.card-lbl{font-size:10px;font-weight:700;color:var(--txt3);letter-spacing:.5px;margin-bottom:8px;}
+.btn{padding:11px 16px;border-radius:var(--r2);border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;}
+.btn:active{transform:scale(.97);}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn-gold{background:linear-gradient(135deg,var(--gold2),var(--gold));color:#000;}
+.btn-pur{background:linear-gradient(135deg,var(--pur2),var(--pur));color:#fff;}
+.btn-ghost{background:var(--bg3);border:1.5px solid var(--bor2);color:var(--txt2);}
+.btn-full{width:100%;}
+.btn-row{display:flex;gap:8px;}
+/* スタイルカード */
+.style-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.style-card{background:var(--bg3);border:2px solid var(--bor);border-radius:var(--r2);padding:12px;cursor:pointer;transition:.15s;text-align:center;}
+.style-card.sel{border-color:var(--gold);background:var(--gold-xl);}
+.style-card:active{transform:scale(.97);}
+.style-ico{font-size:24px;margin-bottom:6px;}
+.style-nm{font-size:12px;font-weight:700;color:var(--txt);}
+.style-desc{font-size:9px;color:var(--txt3);margin-top:2px;line-height:1.5;}
+/* カラーパレット */
+.palette-row{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+.color-swatch{width:44px;height:44px;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:.15s;position:relative;}
+.color-swatch.sel{border-color:#fff;transform:scale(1.1);}
+.color-hex{font-size:8px;color:var(--txt3);text-align:center;margin-top:2px;}
+/* プレビュー比較 */
+.compare-wrap{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.compare-panel{border-radius:var(--r2);overflow:hidden;border:1.5px solid var(--bor);}
+.compare-lbl{background:var(--bg3);padding:6px 10px;font-size:10px;font-weight:700;text-align:center;}
+.compare-iframe{width:100%;height:200px;border:none;display:block;background:#fff;}
+/* ローディング */
+.loading-wrap{text-align:center;padding:24px;}
+.loading-ico{font-size:36px;animation:rotate 2s linear infinite;}
+@keyframes rotate{to{transform:rotate(360deg);}}
+.loading-txt{font-size:11px;color:var(--txt3);margin-top:8px;}
+/* AI応答 */
+.ai-note{background:var(--bg3);border:1.5px solid var(--bor);border-radius:var(--r2);padding:12px;font-size:11px;color:var(--txt2);line-height:1.8;margin-bottom:10px;}
+.sel-inp{width:100%;padding:10px 12px;background:var(--bg3);border:1.5px solid var(--bor);border-radius:var(--r2);color:var(--txt);font-size:12px;font-family:inherit;outline:none;margin-bottom:8px;}
+.ta-inp{width:100%;padding:10px;background:var(--bg3);border:1.5px solid var(--bor);border-radius:var(--r2);color:var(--txt);font-size:11px;font-family:inherit;resize:none;outline:none;line-height:1.7;}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1.5px solid var(--bor2);color:var(--txt);padding:8px 18px;border-radius:20px;font-size:11px;font-weight:700;z-index:9999;pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap;}
+#toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div>
+    <div class="hdr-title">🎨 FORGE DESIGNER</div>
+    <div style="font-size:9px;color:var(--txt3);">デザイン強化・カラーパレット・トレンド参照</div>
+  </div>
+  <div class="nav-links">
+    <a class="nav-btn" href="index.html">🏠</a>
+    <a class="nav-btn" href="forge.html">⚡</a>
+    <a class="nav-btn" href="forge-tester.html">🔧</a>
+    <a class="nav-btn" href="error-lab.html">🔬</a>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab on" onclick="goTab('style',this)">🎨 スタイル</button>
+  <button class="tab" onclick="goTab('color',this)">🎨 カラー</button>
+  <button class="tab" onclick="goTab('trend',this)">🔍 トレンド</button>
+  <button class="tab" onclick="goTab('compare',this)">⚖ 比較</button>
+</div>
+
+<div class="main">
+
+  <!-- 現在のHTML状態表示 -->
+  <div id="no-html-warn" style="display:none;" class="card" style="border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.06);">
+    <div style="font-size:12px;color:var(--red);text-align:center;">⚠️ FORGEでアプリを生成してからデザイン強化してください</div>
+    <a href="forge.html" class="btn btn-ghost btn-full" style="display:block;text-align:center;margin-top:8px;text-decoration:none;">⚡ FORGEで生成する</a>
+  </div>
+  <div id="html-info" class="card" style="padding:10px 14px;display:none;">
+    <div style="font-size:11px;color:var(--txt2);">🎨 デザイン対象：<span id="app-title-lbl" style="color:var(--gold);font-weight:700;"></span></div>
+  </div>
+
+  <!-- ════ スタイルタブ ════ -->
+  <div id="pg-style">
+    <div class="card">
+      <div class="card-lbl">デザインスタイルを選ぶ</div>
+      <div class="style-grid" id="style-grid"></div>
+      <div class="card-lbl">追加の要望（任意）</div>
+      <textarea class="ta-inp" id="style-extra" rows="2" placeholder="例：ボタンを丸くして・フォントを大きく・ヘッダーをグラデーションに"></textarea>
+    </div>
+    <button class="btn btn-gold btn-full" onclick="applyStyle()" id="style-btn">🎨 このスタイルでデザインを刷新</button>
+  </div>
+
+  <!-- ════ カラータブ ════ -->
+  <div id="pg-color" style="display:none;">
+    <div class="card">
+      <div class="card-lbl">カラーテーマ</div>
+      <select class="sel-inp" id="color-theme">
+        <option>ダーク（黒・深紫）</option>
+        <option>ライト（白・薄グレー）</option>
+        <option>和風（茶・金・和紙）</option>
+        <option>海系（青・水色・白）</option>
+        <option>夕暮れ（オレンジ・赤・紫）</option>
+        <option>森系（緑・茶・白）</option>
+        <option>モノトーン（黒・白・グレー）</option>
+        <option>カスタム</option>
+      </select>
+      <div class="card-lbl">生成されたパレット</div>
+      <div class="palette-row" id="palette-display">
+        <div style="font-size:11px;color:var(--txt3);">「パレットを生成」ボタンを押してください</div>
+      </div>
+      <button class="btn btn-ghost btn-full" onclick="generatePalette()" id="palette-btn" style="margin-bottom:8px;">🎨 パレットを生成</button>
+    </div>
+    <button class="btn btn-gold btn-full" onclick="applyColor()" id="color-btn">🎨 このカラーを適用</button>
+  </div>
+
+  <!-- ════ トレンドタブ ════ -->
+  <div id="pg-trend" style="display:none;">
+    <div class="card">
+      <div class="card-lbl">🔍 最新デザイントレンドを検索して適用</div>
+      <select class="sel-inp" id="trend-category">
+        <option>SaaS・Webアプリ デザイントレンド 2024</option>
+        <option>モバイルアプリ UI トレンド 2024</option>
+        <option>グラスモーフィズム デザイン</option>
+        <option>ネオブルータリズム デザイン</option>
+        <option>ミニマリズム Webデザイン</option>
+        <option>ダークモード デザイン 最新</option>
+        <option>日本語アプリ UIデザイン トレンド</option>
+      </select>
+      <div id="trend-result" style="margin-top:8px;"></div>
+    </div>
+    <button class="btn btn-pur btn-full" onclick="searchTrend()" id="trend-btn" style="margin-bottom:8px;">🔍 トレンドを検索</button>
+    <button class="btn btn-gold btn-full" onclick="applyTrend()" id="apply-trend-btn" style="display:none;">✨ このトレンドでデザインを刷新</button>
+  </div>
+
+  <!-- ════ 比較タブ ════ -->
+  <div id="pg-compare" style="display:none;">
+    <div class="card">
+      <div class="card-lbl">⚖ Before / After 比較</div>
+      <div class="compare-wrap">
+        <div class="compare-panel">
+          <div class="compare-lbl">Before（元のデザイン）</div>
+          <iframe id="before-iframe" class="compare-iframe" sandbox="allow-scripts"></iframe>
+        </div>
+        <div class="compare-panel">
+          <div class="compare-lbl" style="color:var(--gold);">After（新しいデザイン）</div>
+          <iframe id="after-iframe" class="compare-iframe" sandbox="allow-scripts"></iframe>
+        </div>
+      </div>
+      <div id="diff-note" class="ai-note" style="display:none;"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="keepBefore()" style="flex:1;">← Beforeを保持</button>
+      <button class="btn btn-gold" onclick="keepAfter()" style="flex:1;">Afterを採用 →</button>
+    </div>
+  </div>
+
+  <!-- ローディング -->
+  <div id="loading-area" style="display:none;">
+    <div class="loading-wrap">
+      <div class="loading-ico">🎨</div>
+      <div class="loading-txt" id="loading-txt">デザインを生成中...</div>
+    </div>
+  </div>
+
+  <!-- 適用完了 -->
+  <div id="done-area" style="display:none;" class="card" style="border-color:rgba(16,185,129,.3);">
+    <div style="font-size:12px;color:var(--grn);font-weight:700;margin-bottom:8px;">✅ デザインを更新しました</div>
+    <div id="done-note" class="ai-note"></div>
+    <div class="btn-row" style="margin-top:8px;">
+      <button class="btn btn-ghost" onclick="goTab('compare',null);showCompare()" style="flex:1;font-size:11px;">⚖ 比較表示</button>
+      <a href="forge-tester.html" class="btn btn-pur" style="flex:1;font-size:11px;text-decoration:none;text-align:center;">🔧 機能テストへ</a>
+    </div>
+  </div>
+
+</div>
+<div id="toast"></div>
+
+<script>
+const EP='https://asia-northeast1-kensetsu-nippo-842a2.cloudfunctions.net/askAI';
+const KEY='HeartsHouse2026Key';
+
+var originalHTML='';
+var newHTML='';
+var trendText='';
+var currentPalette=null;
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+var _tt;
+function showToast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),3000);}
+async function callAI(prompt,search,schema){
+  var body={model:'gemini-2.5-flash',mode:'normal',prompt:prompt,useSearch:!!search};
+  if(schema)body.responseSchema=schema;
+  var r=await fetch(EP,{method:'POST',headers:{'Content-Type':'application/json','x-access-key':KEY},body:JSON.stringify(body)});
+  var d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  return d?.data?.text||d?.candidates?.[0]?.content?.parts?.[0]?.text||d?.text||'';
+}
+
+// ════ 初期化 ════
+
+// Firestore + localStorageからHTMLを読み込む
+async function loadFromFirestore(){
+  try{
+    var fb=window.__fb;
+    if(fb&&fb.auth&&fb.auth.currentUser){
+      var uid=fb.auth.currentUser.uid;
+      var snap=await fb.getDoc(fb.doc(fb.db,'forge_sessions',uid));
+      if(snap.exists()&&snap.data().html){
+        var d=snap.data();
+        localStorage.setItem('FORGE_CURRENT_HTML',d.html);
+        localStorage.setItem('FORGE_TITLE',d.title||'');
+        return {html:d.html,title:d.title||''};
+      }
+    }
+  }catch(e){}
+  return {
+    html:localStorage.getItem('FORGE_CURRENT_HTML')||'',
+    title:localStorage.getItem('FORGE_TITLE')||''
+  };
+}
+
+// Firestoreに保存
+async function saveToFirestore(html,title){
+  localStorage.setItem('FORGE_CURRENT_HTML',html);
+  localStorage.setItem('FORGE_TITLE',title||'');
+  try{
+    var fb=window.__fb;
+    if(!fb||!fb.auth||!fb.auth.currentUser) return;
+    var uid=fb.auth.currentUser.uid;
+    await fb.setDoc(fb.doc(fb.db,'forge_sessions',uid),{
+      html:html,title:title||'',updatedAt:fb.serverTimestamp()
+    });
+  }catch(e){}
+}
+
+async function init(){
+  var data=await loadFromFirestore();
+  originalHTML=data.html;
+  var title=data.title;
+  if(!originalHTML){
+    document.getElementById('no-html-warn').style.display='block';
+    document.getElementById('html-info').style.display='none';
+  } else {
+    document.getElementById('no-html-warn').style.display='none';
+    document.getElementById('html-info').style.display='block';
+    document.getElementById('app-title-lbl').textContent=title;
+  }
+}
+
+// ════ タブ ════
+function goTab(name,btn){
+  ['style','color','trend','compare'].forEach(n=>{
+    document.getElementById('pg-'+n).style.display=n===name?'block':'none';
+  });
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+}
+
+// ════ スタイル定義 ════
+const STYLES=[
+  {id:'minimal',ico:'⬜',name:'ミニマル',desc:'余白多め・シンプル・白基調'},
+  {id:'dark',ico:'🌑',name:'ダーク',desc:'黒背景・グロウエフェクト'},
+  {id:'glass',ico:'💎',name:'グラスモーフィズム',desc:'すりガラス・透明感・ぼかし'},
+  {id:'neo',ico:'🟧',name:'ネオブルータル',desc:'太いボーダー・大胆な色'},
+  {id:'japanese',ico:'🏯',name:'和風',desc:'和紙・茶色・金・毛筆フォント'},
+  {id:'gradient',ico:'🌈',name:'グラデーション',desc:'鮮やかなグラデ・動きのある色彩'},
+];
+var selectedStyle='minimal';
+function renderStyles(){
+  document.getElementById('style-grid').innerHTML=STYLES.map(s=>
+    '<div class="style-card'+(s.id===selectedStyle?' sel':'')+'" onclick="selectStyle(\''+s.id+'\')" id="sc-'+s.id+'">'
+    +'<div class="style-ico">'+s.ico+'</div>'
+    +'<div class="style-nm">'+s.name+'</div>'
+    +'<div class="style-desc">'+s.desc+'</div>'
+    +'</div>'
+  ).join('');
+}
+function selectStyle(id){
+  selectedStyle=id;
+  document.querySelectorAll('.style-card').forEach(el=>el.classList.remove('sel'));
+  document.getElementById('sc-'+id).classList.add('sel');
+}
+
+// ════ スタイル適用 ════
+async function applyStyle(){
+  if(!originalHTML){showToast('FORGEでアプリを生成してください');return;}
+  var style=STYLES.find(s=>s.id===selectedStyle);
+  var extra=document.getElementById('style-extra').value.trim();
+  showLoading('🎨 '+style.name+'スタイルに変換中...');
+  try{
+    var prompt='あなたはプロのUIデザイナーです。\n\n'
+      +'以下のWebアプリのHTML全体のデザインを「'+style.name+'」スタイルに刷新してください。\n'
+      +'スタイルの特徴：'+style.desc+'\n'
+      +(extra?'追加要望：'+extra+'\n':'')
+      +'\n【デザイン指示】\n'
+      +'・CSS変数（:root）でカラーパレットを定義する\n'
+      +'・フォント・余白・角丸・シャドウを'+style.name+'スタイルに統一\n'
+      +'・機能・テキスト・JavaScriptは一切変更しない\n'
+      +'・レスポンシブ対応を維持する\n'
+      +'・モバイルファーストで設計する\n\n'
+      +'【元のHTML】\n'+originalHTML.slice(0,12000)+'\n\n'
+      +'完全なHTMLを出力してください。マークダウン禁止。';
+    var result=await callAI(prompt,false);
+    var htmlMatch=result.match(/<!DOCTYPE[\s\S]*<\/html>/i)||result.match(/<html[\s\S]*<\/html>/i);
+    newHTML=htmlMatch?htmlMatch[0]:result;
+    await saveToFirestore(newHTML,localStorage.getItem('FORGE_TITLE')||'');
+    showDone('「'+style.name+'」スタイルを適用しました。'+( extra?'「'+extra+'」も反映済み。':''));
+  }catch(e){hideLoading();showToast('エラー: '+e.message);}
+}
+
+// ════ カラーパレット生成 ════
+async function generatePalette(){
+  var theme=document.getElementById('color-theme').value;
+  var btn=document.getElementById('palette-btn');
+  btn.disabled=true;btn.textContent='生成中...';
+  try{
+    var schema={type:'object',properties:{
+      colors:{type:'array',items:{type:'object',properties:{
+        hex:{type:'string'},name:{type:'string'},role:{type:'string'}
+      }}},
+      css_vars:{type:'string'}
+    },required:['colors','css_vars']};
+    var raw=await callAI(
+      'カラーテーマ「'+theme+'」の美しいカラーパレットを5色生成してください。\n'
+      +'各色にHEXコード・色名・役割（primary/background/text/accent/border）を付けてください。\n'
+      +'css_varsにはCSS変数（:rootの中身）も生成してください。',
+      false,schema
+    );
+    var result=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    currentPalette=result;
+    renderPalette(result.colors);
+    showToast('✅ パレットを生成しました');
+  }catch(e){showToast('エラー: '+e.message);}
+  btn.disabled=false;btn.textContent='🎨 パレットを生成';
+}
+function renderPalette(colors){
+  document.getElementById('palette-display').innerHTML=colors.map(c=>
+    '<div style="text-align:center;"><div class="color-swatch" style="background:'+c.hex+';"></div>'
+    +'<div class="color-hex">'+c.hex+'</div>'
+    +'<div style="font-size:8px;color:var(--txt3);">'+c.role+'</div></div>'
+  ).join('');
+}
+async function applyColor(){
+  if(!originalHTML||!currentPalette){showToast('先にパレットを生成してください');return;}
+  showLoading('🎨 カラーを適用中...');
+  try{
+    var prompt='以下のHTMLのCSSカラーを新しいパレットに変更してください。\n\n'
+      +'【新しいCSS変数】\n:root {\n'+currentPalette.css_vars+'\n}\n\n'
+      +'機能・構造・JavaScriptは変更しないこと。\n\n'
+      +'【元のHTML】\n'+originalHTML.slice(0,12000)+'\n\n完全なHTMLを出力。マークダウン禁止。';
+    var result=await callAI(prompt,false);
+    var htmlMatch=result.match(/<!DOCTYPE[\s\S]*<\/html>/i)||result.match(/<html[\s\S]*<\/html>/i);
+    newHTML=htmlMatch?htmlMatch[0]:result;
+    await saveToFirestore(newHTML,localStorage.getItem('FORGE_TITLE')||'');
+    showDone('カラーパレットを適用しました。');
+  }catch(e){hideLoading();showToast('エラー: '+e.message);}
+}
+
+// ════ トレンド検索 ════
+async function searchTrend(){
+  var cat=document.getElementById('trend-category').value;
+  var btn=document.getElementById('trend-btn');
+  btn.disabled=true;btn.textContent='検索中...';
+  document.getElementById('trend-result').innerHTML='';
+  try{
+    trendText=await callAI(
+      '「'+cat+'」について検索し、具体的なデザイン手法・色・フォント・UIパターンを詳しく教えてください。'
+      +'Webアプリ開発にすぐ使える形でCSSの具体的な値も含めて説明してください。',
+      true
+    );
+    document.getElementById('trend-result').innerHTML='<div class="ai-note">'+esc(trendText.slice(0,400))+'...</div>';
+    document.getElementById('apply-trend-btn').style.display='block';
+    showToast('✅ トレンド情報を取得しました');
+  }catch(e){showToast('エラー: '+e.message);}
+  btn.disabled=false;btn.textContent='🔍 トレンドを検索';
+}
+async function applyTrend(){
+  if(!originalHTML||!trendText){showToast('まずトレンドを検索してください');return;}
+  showLoading('✨ トレンドを適用中...');
+  try{
+    var prompt='以下のWebアプリのデザインを最新トレンドに合わせて刷新してください。\n\n'
+      +'【参考トレンド情報】\n'+trendText.slice(0,2000)+'\n\n'
+      +'機能・テキスト・JavaScriptは変更しないこと。\n\n'
+      +'【元のHTML】\n'+originalHTML.slice(0,10000)+'\n\n完全なHTMLを出力。マークダウン禁止。';
+    var result=await callAI(prompt,false);
+    var htmlMatch=result.match(/<!DOCTYPE[\s\S]*<\/html>/i)||result.match(/<html[\s\S]*<\/html>/i);
+    newHTML=htmlMatch?htmlMatch[0]:result;
+    await saveToFirestore(newHTML,localStorage.getItem('FORGE_TITLE')||'');
+    showDone('最新トレンドのデザインを適用しました。');
+  }catch(e){hideLoading();showToast('エラー: '+e.message);}
+}
+
+// ════ Before/After比較 ════
+function showCompare(){
+  document.getElementById('before-iframe').srcdoc=originalHTML;
+  document.getElementById('after-iframe').srcdoc=newHTML||originalHTML;
+}
+function keepBefore(){
+  localStorage.setItem('FORGE_CURRENT_HTML',originalHTML);
+  showToast('元のデザインを保持しました');
+}
+async function keepAfter(){
+  if(!newHTML){showToast('新しいデザインがありません');return;}
+  await saveToFirestore(newHTML,localStorage.getItem('FORGE_TITLE')||'');
+  showToast('✅ 新しいデザインを採用しました');
+}
+
+// ════ UI ════
+function showLoading(txt){
+  document.getElementById('loading-area').style.display='block';
+  document.getElementById('loading-txt').textContent=txt;
+  document.getElementById('done-area').style.display='none';
+}
+function hideLoading(){document.getElementById('loading-area').style.display='none';}
+function showDone(note){
+  hideLoading();
+  document.getElementById('done-area').style.display='block';
+  document.getElementById('done-note').textContent=note;
+}
+
+// 初期化
+init();
+renderStyles();
+</script>
+</body>
+</html>
