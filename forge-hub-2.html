@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>FORGE STUDIO</title>
+<style>
+:root{
+  --bg:#060608;--bg2:#0d0d12;--bg3:#14141c;
+  --card:#14141c;--bor:rgba(200,150,80,.1);--bor2:rgba(200,150,80,.2);
+  --gold:#f0b830;--gold2:#d4960a;--gold-xl:rgba(240,184,48,.1);
+  --pur:#a855f7;--grn:#10b981;--red:#ef4444;--blue:#3b82f6;
+  --txt:#f5f0e8;--txt2:#a09070;--txt3:#605040;
+  --r:14px;--r2:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--txt);font-family:'Hiragino Sans','Noto Sans JP',sans-serif;min-height:100vh;}
+
+/* スプラッシュ的ヘッダー */
+.hero{text-align:center;padding:32px 20px 20px;background:radial-gradient(ellipse at 50% 0%,rgba(240,184,48,.08),transparent 70%);}
+.hero-ico{font-size:48px;margin-bottom:10px;filter:drop-shadow(0 0 20px rgba(240,184,48,.4));}
+.hero-title{font-size:26px;font-weight:900;letter-spacing:6px;background:linear-gradient(90deg,var(--gold),#fff,var(--gold));background-size:200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shine 3s linear infinite;}
+@keyframes shine{to{background-position:200% center;}}
+.hero-sub{font-size:11px;color:var(--txt3);letter-spacing:2px;margin-top:6px;}
+
+/* 現在のアプリ状態 */
+.current-card{margin:0 16px 16px;background:var(--card);border:1.5px solid var(--bor2);border-radius:var(--r);padding:14px;}
+.current-lbl{font-size:9px;font-weight:700;color:var(--txt3);letter-spacing:1px;margin-bottom:6px;}
+.current-title{font-size:16px;font-weight:900;color:var(--gold);margin-bottom:4px;}
+.current-meta{font-size:10px;color:var(--txt3);margin-bottom:10px;}
+.preview-iframe{width:100%;height:160px;border:1.5px solid var(--bor);border-radius:var(--r2);background:#fff;display:block;}
+.no-app{text-align:center;padding:20px;color:var(--txt3);font-size:12px;}
+
+/* フローガイド */
+.flow-wrap{margin:0 16px 16px;background:var(--card);border:1.5px solid var(--bor);border-radius:var(--r);padding:14px;}
+.flow-lbl{font-size:9px;font-weight:700;color:var(--txt3);letter-spacing:1px;margin-bottom:10px;}
+.flow-row{display:flex;align-items:center;justify-content:space-between;overflow-x:auto;scrollbar-width:none;gap:4px;}
+.flow-step{text-align:center;flex-shrink:0;flex:1;}
+.flow-ico{font-size:22px;}
+.flow-nm{font-size:8px;color:var(--txt2);font-weight:700;margin-top:3px;}
+.flow-arr{color:var(--txt3);font-size:14px;flex-shrink:0;}
+
+/* アプリカード */
+.apps{padding:0 16px;display:flex;flex-direction:column;gap:10px;margin-bottom:20px;}
+.app-card{background:var(--card);border:2px solid var(--bor);border-radius:var(--r);padding:16px;display:flex;align-items:center;gap:14px;text-decoration:none;transition:.15s;}
+.app-card:active{transform:scale(.98);opacity:.85;}
+.app-ico{width:54px;height:54px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;}
+.app-info{flex:1;}
+.app-name{font-size:16px;font-weight:900;color:var(--txt);letter-spacing:.5px;margin-bottom:3px;}
+.app-desc{font-size:11px;color:var(--txt2);line-height:1.6;}
+.app-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;}
+.tag{padding:2px 8px;border-radius:20px;font-size:9px;font-weight:700;}
+.app-arr{color:var(--txt3);font-size:20px;flex-shrink:0;}
+
+/* 履歴 */
+.hist-wrap{margin:0 16px 32px;background:var(--card);border:1.5px solid var(--bor);border-radius:var(--r);padding:14px;}
+.hist-lbl{font-size:9px;font-weight:700;color:var(--txt3);letter-spacing:1px;margin-bottom:10px;}
+.hist-item{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bor);cursor:pointer;}
+.hist-item:last-child{border-bottom:none;}
+.hist-name{font-size:12px;color:var(--txt);font-weight:700;}
+.hist-date{font-size:10px;color:var(--txt3);}
+.hist-restore{padding:4px 10px;border-radius:6px;border:1.5px solid var(--bor2);background:transparent;color:var(--txt3);font-size:10px;cursor:pointer;}
+.empty{text-align:center;padding:16px;color:var(--txt3);font-size:11px;}
+</style>
+</head>
+<body>
+
+<!-- ヘッダー -->
+<div class="hero">
+  <div class="hero-ico">⚡</div>
+  <div class="hero-title">FORGE STUDIO</div>
+  <div class="hero-sub">AIアプリ制作スタジオ</div>
+</div>
+
+<!-- 現在のアプリ -->
+<div class="current-card" id="current-card">
+  <div class="current-lbl">現在作業中のアプリ</div>
+  <div id="current-content">
+    <div class="no-app">⚡ まだアプリが生成されていません<br>FORGEから始めてください</div>
+  </div>
+</div>
+
+<!-- フローガイド -->
+<div class="flow-wrap">
+  <div class="flow-lbl">制作フロー</div>
+  <div class="flow-row">
+    <div class="flow-step"><div class="flow-ico">🧑‍🔬</div><div class="flow-nm">EINSTEIN<br>設計相談</div></div>
+    <div class="flow-arr">→</div>
+    <div class="flow-step"><div class="flow-ico">⚡</div><div class="flow-nm">FORGE<br>生成</div></div>
+    <div class="flow-arr">→</div>
+    <div class="flow-step"><div class="flow-ico">📐</div><div class="flow-nm">CALC<br>計算強化</div></div>
+    <div class="flow-arr">→</div>
+    <div class="flow-step"><div class="flow-ico">🎨</div><div class="flow-nm">DESIGNER<br>デザイン</div></div>
+    <div class="flow-arr">→</div>
+    <div class="flow-step"><div class="flow-ico">🔧</div><div class="flow-nm">TESTER<br>強化</div></div>
+    <div class="flow-arr">→</div>
+    <div class="flow-step"><div class="flow-ico">🔬</div><div class="flow-nm">ERROR LAB<br>修正</div></div>
+  </div>
+</div>
+
+<!-- アプリ一覧 -->
+<div class="apps">
+
+  <a class="app-card" href="forge.html" style="border-color:rgba(240,184,48,.3);">
+    <div class="app-ico" style="background:rgba(240,184,48,.1);border:2px solid rgba(240,184,48,.3);">⚡</div>
+    <div class="app-info">
+      <div class="app-name">FORGE</div>
+      <div class="app-desc">アイデアを入力するだけでWebアプリを自動生成。2ステップ高精度生成。</div>
+      <div class="app-tags">
+        <span class="tag" style="background:rgba(240,184,48,.1);color:var(--gold);">アプリ生成</span>
+        <span class="tag" style="background:rgba(240,184,48,.1);color:var(--gold);">履歴管理</span>
+        <span class="tag" style="background:rgba(240,184,48,.1);color:var(--gold);">修正依頼</span>
+      </div>
+    </div>
+    <div class="app-arr">›</div>
+  </a>
+
+  <a class="app-card" href="forge-designer.html" style="border-color:rgba(168,85,247,.3);">
+    <div class="app-ico" style="background:rgba(168,85,247,.1);border:2px solid rgba(168,85,247,.3);">🎨</div>
+    <div class="app-info">
+      <div class="app-name">FORGE DESIGNER</div>
+      <div class="app-desc">チープなデザインを本格的に刷新。スタイル・カラー・トレンド参照・Before/After比較。</div>
+      <div class="app-tags">
+        <span class="tag" style="background:rgba(168,85,247,.1);color:var(--pur);">スタイル6種</span>
+        <span class="tag" style="background:rgba(168,85,247,.1);color:var(--pur);">カラーパレット</span>
+        <span class="tag" style="background:rgba(168,85,247,.1);color:var(--pur);">トレンド検索</span>
+      </div>
+    </div>
+    <div class="app-arr">›</div>
+  </a>
+
+  <a class="app-card" href="forge-tester.html" style="border-color:rgba(16,185,129,.3);">
+    <div class="app-ico" style="background:rgba(16,185,129,.1);border:2px solid rgba(16,185,129,.3);">🔧</div>
+    <div class="app-info">
+      <div class="app-name">FORGE TESTER</div>
+      <div class="app-desc">部分修正・ABテスト・Firebase自動挿入・強化パック（ローディング・トースト等）。</div>
+      <div class="app-tags">
+        <span class="tag" style="background:rgba(16,185,129,.1);color:var(--grn);">部分修正</span>
+        <span class="tag" style="background:rgba(16,185,129,.1);color:var(--grn);">Firebase挿入</span>
+        <span class="tag" style="background:rgba(16,185,129,.1);color:var(--grn);">強化パック</span>
+      </div>
+    </div>
+    <div class="app-arr">›</div>
+  </a>
+
+  <a class="app-card" href="error-lab.html" style="border-color:rgba(239,68,68,.3);">
+    <div class="app-ico" style="background:rgba(239,68,68,.1);border:2px solid rgba(239,68,68,.3);">🔬</div>
+    <div class="app-info">
+      <div class="app-name">ERROR LAB</div>
+      <div class="app-desc">JSエラー自動検知・Gemini解析・自動修正（最大3回）・html2canvas見た目チェック。</div>
+      <div class="app-tags">
+        <span class="tag" style="background:rgba(239,68,68,.1);color:var(--red);">エラー検知</span>
+        <span class="tag" style="background:rgba(239,68,68,.1);color:var(--red);">自動修正</span>
+        <span class="tag" style="background:rgba(239,68,68,.1);color:var(--red);">見た目チェック</span>
+      </div>
+    </div>
+    <div class="app-arr">›</div>
+  </a>
+
+  <a class="app-card" href="calc-engine.html" style="border-color:rgba(59,130,246,.3);">
+    <div class="app-ico" style="background:rgba(59,130,246,.1);border:2px solid rgba(59,130,246,.3);">📐</div>
+    <div class="app-info">
+      <div class="app-name">CALC ENGINE</div>
+      <div class="app-desc">計算ロジック専用エンジン。建設・競馬・税務・将棋等の計算関数を生成・テスト・ライブラリ保存してFORGEに挿入。</div>
+      <div class="app-tags">
+        <span class="tag" style="background:rgba(59,130,246,.1);color:var(--blue);">ロジック生成</span>
+        <span class="tag" style="background:rgba(59,130,246,.1);color:var(--blue);">自動テスト</span>
+        <span class="tag" style="background:rgba(59,130,246,.1);color:var(--blue);">FORGE挿入</span>
+      </div>
+    </div>
+    <div class="app-arr">›</div>
+  </a>
+
+  <a class="app-card" href="neo.html" style="border-color:rgba(99,102,241,.3);">
+    <div class="app-ico" style="background:rgba(99,102,241,.1);border:2px solid rgba(99,102,241,.3);">🧑‍🔬</div>
+    <div class="app-info">
+      <div class="app-name">NEO AI</div>
+      <div class="app-desc">天才科学者アインシュタインとの対話。設計相談・計算検証・思考実験でFORGEアプリの方向性をディレクト。</div>
+      <div class="app-tags">
+        <span class="tag" style="background:rgba(99,102,241,.1);color:#a5b4fc;">天才AI</span>
+        <span class="tag" style="background:rgba(99,102,241,.1);color:#a5b4fc;">思考実験</span>
+        <span class="tag" style="background:rgba(99,102,241,.1);color:#a5b4fc;">FORGE連携</span>
+      </div>
+    </div>
+    <div class="app-arr">›</div>
+  </a>
+
+</div>
+
+<!-- 履歴 -->
+<div class="hist-wrap">
+  <div class="hist-lbl">作業履歴</div>
+  <div id="hist-list"><div class="empty">まだ履歴がありません</div></div>
+</div>
+
+<script>
+
+// Firestore + localStorageからHTMLを読み込む
+async function loadFromFirestore(){
+  try{
+    var fb=window.__fb;
+    if(fb&&fb.auth&&fb.auth.currentUser){
+      var uid=fb.auth.currentUser.uid;
+      var snap=await fb.getDoc(fb.doc(fb.db,'forge_sessions',uid));
+      if(snap.exists()&&snap.data().html){
+        var d=snap.data();
+        localStorage.setItem('FORGE_CURRENT_HTML',d.html);
+        localStorage.setItem('FORGE_TITLE',d.title||'');
+        return {html:d.html,title:d.title||''};
+      }
+    }
+  }catch(e){}
+  return {
+    html:localStorage.getItem('FORGE_CURRENT_HTML')||'',
+    title:localStorage.getItem('FORGE_TITLE')||''
+  };
+}
+
+// Firestoreに保存
+async function saveToFirestore(html,title){
+  localStorage.setItem('FORGE_CURRENT_HTML',html);
+  localStorage.setItem('FORGE_TITLE',title||'');
+  try{
+    var fb=window.__fb;
+    if(!fb||!fb.auth||!fb.auth.currentUser) return;
+    var uid=fb.auth.currentUser.uid;
+    await fb.setDoc(fb.doc(fb.db,'forge_sessions',uid),{
+      html:html,title:title||'',updatedAt:fb.serverTimestamp()
+    });
+  }catch(e){}
+}
+
+async function init(){
+  var data=await loadFromFirestore();
+  var html=data.html;
+  var title=data.title||'';
+  var el=document.getElementById('current-content');
+  if(html&&title){
+    el.innerHTML=
+      '<div class="current-title">'+esc(title)+'</div>'
+      +'<div class="current-meta">'+esc(html.length.toLocaleString())+'文字</div>'
+      +'<iframe class="preview-iframe" sandbox="allow-scripts" srcdoc="'+esc(html.slice(0,8000))+'"></iframe>'
+      +'<div style="display:flex;gap:6px;margin-top:8px;">'
+      +'<a href="forge.html" style="flex:1;display:block;text-align:center;padding:9px;border-radius:8px;background:rgba(240,184,48,.15);border:1.5px solid rgba(240,184,48,.3);color:var(--gold);font-size:11px;font-weight:700;text-decoration:none;">⚡ 続きを生成</a>'
+      +'<button onclick="clearCurrent()" style="flex:0;padding:9px 12px;border-radius:8px;border:1.5px solid var(--bor2);background:transparent;color:var(--txt3);font-size:11px;cursor:pointer;">🗑 クリア</button>'
+      +'</div>';
+  }
+
+  // 履歴
+  try{
+    var hist=JSON.parse(localStorage.getItem('forge_history')||'[]');
+    if(hist.length){
+      document.getElementById('hist-list').innerHTML=hist.slice(-8).reverse().map(function(h){
+        return '<div class="hist-item">'
+          +'<div><div class="hist-name">'+esc(h.title||'無題')+'</div>'
+          +'<div class="hist-date">'+esc(h.date||'')+'</div></div>'
+          +'<button class="hist-restore" onclick="restoreHist(\''+h.id+'\')">復元</button>'
+          +'</div>';
+      }).join('');
+    }
+  }catch(e){}
+}
+
+function restoreHist(id){
+  try{
+    var hist=JSON.parse(localStorage.getItem('forge_history')||'[]');
+    var item=hist.find(h=>h.id==id);
+    if(item&&item.html){
+      localStorage.setItem('FORGE_CURRENT_HTML',item.html);
+      localStorage.setItem('FORGE_TITLE',item.title||'復元したアプリ');
+      try{var fb=window.__fb;if(fb&&fb.auth&&fb.auth.currentUser){var uid=fb.auth.currentUser.uid;fb.setDoc(fb.doc(fb.db,'forge_sessions',uid),{html:item.html,title:item.title||'復元したアプリ',updatedAt:fb.serverTimestamp()});}}catch(e){}
+      showToast('✅ 「'+item.title+'」を復元しました');
+      setTimeout(init,100);
+    }
+  }catch(e){}
+}
+
+function clearCurrent(){
+  if(!confirm('現在の作業データをクリアしますか？'))return;
+  localStorage.removeItem('FORGE_CURRENT_HTML');
+  localStorage.removeItem('FORGE_TITLE');
+  document.getElementById('current-content').innerHTML='<div class="no-app">⚡ まだアプリが生成されていません<br>FORGEから始めてください</div>';
+  showToast('クリアしました');
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+var _tt;
+function showToast(m){
+  var t=document.createElement('div');
+  t.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a1a22;border:1.5px solid rgba(200,150,80,.3);color:#f5f0e8;padding:8px 18px;border-radius:20px;font-size:11px;font-weight:700;z-index:9999;white-space:nowrap;';
+  t.textContent=m;document.body.appendChild(t);
+  setTimeout(()=>t.remove(),3000);
+}
+init();
+</script>
+</body>
+</html>
