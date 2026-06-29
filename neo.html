@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>NEO AI</title>
+<style>
+:root{
+  --bg:#000a06;--bg2:#001a0e;--bg3:#002a16;--card:#001810;
+  --bor:rgba(0,255,100,.12);--bor2:rgba(0,255,100,.28);
+  --grn:#00ff64;--grn2:#00cc50;--grn-xl:rgba(0,255,100,.08);
+  --grn-dim:rgba(0,255,100,.5);
+  --blue:#00d4ff;--gold:#f0b830;--red:#ff4444;
+  --txt:#e0ffe8;--txt2:#60c878;--txt3:#306840;
+  --r:10px;--r2:6px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--txt);font-family:'Courier New',monospace;height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(0,255,100,.04),transparent 60%);pointer-events:none;}
+
+/* スキャンライン */
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px);pointer-events:none;z-index:0;}
+
+.hdr{background:rgba(0,10,6,.95);border-bottom:1px solid var(--bor2);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:2;position:relative;}
+.neo-logo{font-size:18px;font-weight:900;color:var(--grn);letter-spacing:4px;text-shadow:0 0 20px var(--grn);}
+.neo-sub{font-size:9px;color:var(--txt3);letter-spacing:2px;margin-top:2px;}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--grn);animation:pulse-dot 2s infinite;display:inline-block;margin-right:6px;}
+@keyframes pulse-dot{0%,100%{opacity:1;box-shadow:0 0 6px var(--grn);}50%{opacity:.5;box-shadow:none;}}
+.nav-links{display:flex;gap:5px;}
+.nav-btn{padding:4px 10px;border:1px solid var(--bor2);background:transparent;color:var(--txt2);font-size:9px;cursor:pointer;letter-spacing:1px;font-family:inherit;}
+.nav-btn:hover{background:var(--grn-xl);color:var(--grn);}
+
+/* モードバー */
+.mode-bar{display:flex;background:var(--bg2);border-bottom:1px solid var(--bor);flex-shrink:0;z-index:2;}
+.mode-btn{flex:1;padding:8px 4px;border:none;background:none;color:var(--txt3);font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:1px;text-transform:uppercase;}
+.mode-btn.on{color:var(--grn);border-bottom:2px solid var(--grn);margin-bottom:-1px;background:var(--grn-xl);text-shadow:0 0 8px var(--grn);}
+
+/* コンテキストバー */
+.ctx-bar{background:var(--bg2);border-bottom:1px solid var(--bor);padding:6px 14px;font-size:9px;color:var(--txt3);letter-spacing:1px;z-index:2;flex-shrink:0;display:flex;align-items:center;gap:8px;}
+.ctx-bar span{color:var(--grn-dim);}
+
+/* チャット */
+.msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;z-index:1;position:relative;}
+.msg-row{display:flex;gap:8px;align-items:flex-start;}
+.msg-row.user{flex-direction:row-reverse;}
+.avatar{width:28px;height:28px;border:1px solid var(--bor2);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;background:var(--grn-xl);font-family:inherit;}
+.avatar.user{border-color:rgba(240,184,48,.3);background:rgba(240,184,48,.05);color:var(--gold);}
+.bubble{max-width:86%;padding:10px 13px;border-radius:var(--r2);font-size:11px;line-height:1.9;font-family:inherit;}
+.bubble.ai{background:var(--card);border:1px solid var(--bor2);}
+.bubble.user{background:rgba(240,184,48,.06);border:1px solid rgba(240,184,48,.2);}
+.mode-tag{display:inline-block;padding:1px 8px;border:1px solid;font-size:8px;font-weight:700;margin-bottom:6px;letter-spacing:2px;}
+.mode-tag.code{border-color:var(--blue);color:var(--blue);}
+.mode-tag.debug{border-color:var(--red);color:var(--red);}
+.mode-tag.review{border-color:var(--gold);color:var(--gold);}
+.mode-tag.chat{border-color:var(--grn-dim);color:var(--grn-dim);}
+.code-block{background:#000;border:1px solid var(--bor2);border-radius:var(--r2);padding:10px;margin:6px 0;font-family:'Courier New',monospace;font-size:10px;color:#00ff64;white-space:pre-wrap;overflow-x:auto;}
+.code-block-hdr{font-size:8px;color:var(--txt3);letter-spacing:2px;margin-bottom:4px;}
+.bubble-action{margin-top:6px;margin-right:4px;padding:4px 10px;border:1px solid var(--bor2);background:transparent;color:var(--txt2);font-size:9px;cursor:pointer;font-family:inherit;letter-spacing:1px;}
+.bubble-action:hover{background:var(--grn-xl);color:var(--grn);}
+.typing{display:flex;gap:3px;align-items:center;padding:4px 0;}
+.td{width:5px;height:5px;background:var(--grn);animation:tdot .6s infinite;}
+.td:nth-child(2){animation-delay:.15s;}
+.td:nth-child(3){animation-delay:.3s;}
+@keyframes tdot{0%,100%{opacity:.2;}50%{opacity:1;}}
+
+/* 現在のコンテキスト表示 */
+.ctx-panel{background:var(--bg2);border:1px solid var(--bor);border-radius:var(--r2);padding:8px 10px;margin-bottom:8px;font-size:9px;color:var(--txt3);}
+.ctx-title{color:var(--grn-dim);letter-spacing:2px;margin-bottom:4px;}
+.ctx-content{font-size:10px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* 入力 */
+.footer{background:rgba(0,10,6,.95);border-top:1px solid var(--bor);padding:10px 14px;flex-shrink:0;z-index:2;}
+.quick-row{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;margin-bottom:8px;}
+.quick-btn{padding:4px 10px;border:1px solid var(--bor);background:transparent;color:var(--txt3);font-size:9px;cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:inherit;letter-spacing:1px;}
+.quick-btn:hover{border-color:var(--grn);color:var(--grn);}
+.input-row{display:flex;gap:8px;align-items:flex-end;}
+.inp-ta{flex:1;padding:9px 12px;background:var(--bg2);border:1px solid var(--bor);color:var(--txt);font-size:12px;font-family:inherit;resize:none;outline:none;max-height:80px;line-height:1.6;border-radius:var(--r2);}
+.inp-ta:focus{border-color:var(--grn);}
+.send-btn{padding:9px 16px;border:none;background:var(--grn2);color:#000;font-size:11px;font-weight:900;cursor:pointer;letter-spacing:2px;font-family:inherit;}
+.send-btn:disabled{opacity:.3;}
+.prompt-prefix{font-size:10px;color:var(--grn);margin-bottom:4px;letter-spacing:1px;}
+
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--bor2);color:var(--grn);padding:6px 16px;border-radius:var(--r2);font-size:10px;font-weight:700;z-index:9999;pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap;letter-spacing:1px;}
+#toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div>
+    <div class="neo-logo"><span class="status-dot"></span>NEO</div>
+    <div class="neo-sub">WORLD CLASS PROGRAMMER AI</div>
+  </div>
+  <div class="nav-links">
+    <a class="nav-btn" href="forge.html">FORGE</a>
+    <a class="nav-btn" href="forge-hub.html">HUB</a>
+    <a class="nav-btn" href="calc-engine.html">CALC</a>
+    <a class="nav-btn" href="error-lab.html">ERROR</a>
+  </div>
+</div>
+
+<div class="mode-bar">
+  <button class="mode-btn on" id="mb-chat" onclick="setMode('chat',this)">CHAT</button>
+  <button class="mode-btn" id="mb-code" onclick="setMode('code',this)">CODE GEN</button>
+  <button class="mode-btn" id="mb-debug" onclick="setMode('debug',this)">DEBUG</button>
+  <button class="mode-btn" id="mb-review" onclick="setMode('review',this)">REVIEW</button>
+</div>
+
+<div class="ctx-bar" id="ctx-bar">
+  CONTEXT: <span id="ctx-status">なし</span>
+  <span id="ctx-title-short"></span>
+</div>
+
+<div class="msgs" id="msgs"></div>
+
+<div class="footer">
+  <div class="prompt-prefix" id="prompt-prefix">&gt; NEO:~$ </div>
+  <div class="quick-row" id="quick-row"></div>
+  <div class="input-row">
+    <textarea class="inp-ta" id="inp" rows="1" placeholder="コマンドを入力..."
+      oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();doSend();}"></textarea>
+    <button class="send-btn" id="send-btn" onclick="doSend()">EXEC</button>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+var EP='https://us-central1-kensetsu-nippo-842a2.cloudfunctions.net/askAI';
+var KEY='HeartsHouse2026Key';
+var currentMode='chat';
+var chatHistory=[];
+
+var NEO_BASE='あなたはNEOです。世界最高レベルのプログラマーAIです。\n口調：短く・的確・論理的。感情なし。挨拶なし。前置きなし。\n返答スタイル：結論から書く。コードは必ずコードブロックで。説明は箇条書き。\n禁止：「もちろん」「なるほど」「素晴らしい」等の感情的前置き。長い説明。';
+
+var MODE_PROMPTS={
+  chat: NEO_BASE+'\n汎用プログラミング相談。必要な情報だけ返す。',
+  code: NEO_BASE+'\n【コード生成モード】\nユーザーの要件を満たすコードを生成する。説明最小限。動くコードを最優先。FORGEに送る場合は「[FORGE_SEND]」を含める。',
+  debug: NEO_BASE+'\n【デバッグモード】\nバグを特定して修正案を出す。原因・修正箇所・修正後コードの順で返す。エラーメッセージを必ず読む。',
+  review: NEO_BASE+'\n【コードレビューモード】\n現在のコードを読んで問題点を指摘する。優先度高・中・低で分類。修正例を示す。'
+};
+
+var QUICK_BTNS={
+  chat:['このコードを説明して','最適な設計は？','バグの原因を特定して','リファクタリング案'],
+  code:['FORGEに送るコードを書いて','Firebase連携を追加','エラーハンドリングを追加','レスポンシブ対応して'],
+  debug:['このエラーを直して','どこが問題か特定して','スタックトレースを分析','テストケースを書いて'],
+  review:['現在のコードをレビューして','セキュリティ問題は？','パフォーマンス改善点','コードの品質を評価して']
+};
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+var _tt;
+function showToast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(_tt);_tt=setTimeout(function(){t.classList.remove('show');},2000);}
+
+async function callAI(prompt,sys){
+  var fullPrompt=sys?sys+'\n\n'+prompt:prompt;
+  var r=await fetch(EP,{method:'POST',headers:{'Content-Type':'application/json','x-access-key':KEY},
+    body:JSON.stringify({model:'gemini-2.5-flash',mode:'normal',prompt:fullPrompt,useSearch:false,useCache:false})});
+  var d=await r.json().catch(function(){return{};});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return d?.data?.text||d?.candidates?.[0]?.content?.parts?.[0]?.text||d?.text||'';
+}
+
+// コンテキスト更新
+function updateContext(){
+  var title=localStorage.getItem('FORGE_TITLE')||'';
+  var html=localStorage.getItem('FORGE_CURRENT_HTML')||'';
+  var calcCode=localStorage.getItem('calc_engine_code')||'';
+  var ctxStatus=document.getElementById('ctx-status');
+  var ctxTitle=document.getElementById('ctx-title-short');
+  if(html||title){
+    ctxStatus.textContent='FORGE';ctxStatus.style.color='var(--gold)';
+    ctxTitle.textContent=title?'['+title+']':'[untitled]';
+  } else if(calcCode){
+    ctxStatus.textContent='CALC';ctxStatus.style.color='var(--blue)';
+    ctxTitle.textContent='[calc code loaded]';
+  } else {
+    ctxStatus.textContent='なし';ctxStatus.style.color='var(--txt3)';
+    ctxTitle.textContent='';
+  }
+}
+
+function buildContextStr(){
+  var parts=[];
+  var title=localStorage.getItem('FORGE_TITLE')||'';
+  var html=localStorage.getItem('FORGE_CURRENT_HTML')||'';
+  var calcCode=localStorage.getItem('calc_engine_code')||'';
+  if(html) parts.push('現在のFORGEコード「'+title+'」（'+html.length+'文字）の先頭部分：\n'+html.slice(0,2000));
+  if(calcCode) parts.push('CALCエンジンのコード：\n'+calcCode.slice(0,1000));
+  return parts.length?'\n\n=== 現在のコンテキスト ===\n'+parts.join('\n\n'):'';
+}
+
+function setMode(mode,btn){
+  currentMode=mode;
+  document.querySelectorAll('.mode-btn').forEach(function(b){b.classList.remove('on');});
+  if(btn)btn.classList.add('on');
+  renderQuickBtns();
+  var tags={chat:'CHAT',code:'CODE GEN',debug:'DEBUG',review:'REVIEW'};
+  document.getElementById('prompt-prefix').textContent='> NEO:~$['+tags[mode]+'] ';
+  // モード切り替え時の短いメッセージ
+  var msgs={
+    chat:'汎用モード。',
+    code:'コード生成モード。要件を入力。',
+    debug:'デバッグモード。エラーを貼り付け。',
+    review:'レビューモード。'+(localStorage.getItem('FORGE_CURRENT_HTML')?'FORGEコードを自動読み込み済み。':'コードを貼り付け。')
+  };
+  addMsg('ai',msgs[mode]);
+}
+
+function renderQuickBtns(){
+  var btns=QUICK_BTNS[currentMode]||[];
+  document.getElementById('quick-row').innerHTML=btns.map(function(b){
+    return '<button class="quick-btn" onclick="quickSend(\''+esc(b)+'\')">'+esc(b)+'</button>';
+  }).join('');
+}
+
+// メッセージ追加
+function addMsg(role,content){
+  var el=document.getElementById('msgs');
+  var row=document.createElement('div');
+  row.className='msg-row '+(role==='user'?'user':'');
+  var av=document.createElement('div');
+  av.className='avatar '+(role==='user'?'user':'');
+  av.textContent=role==='user'?'USR':'NEO';
+  var bub=document.createElement('div');
+  bub.className='bubble '+(role==='user'?'user':'ai');
+  if(role==='ai'){
+    var tags={code:'CODE GEN',debug:'DEBUG',review:'REVIEW'};
+    if(tags[currentMode]){
+      var tag=document.createElement('div');
+      tag.className='mode-tag '+currentMode;
+      tag.textContent=tags[currentMode];
+      bub.appendChild(tag);
+    }
+    // コードブロック分割
+    var parts=content.split(/(```[\s\S]*?```)/g);
+    parts.forEach(function(p){
+      if(p.startsWith('```')){
+        var lang=p.match(/```(\w*)/)?.[1]||'code';
+        var code=p.replace(/```\w*\n?/,'').replace(/```$/,'').trim();
+        var hdr=document.createElement('div');hdr.className='code-block-hdr';hdr.textContent=lang.toUpperCase()+' >';
+        var cb=document.createElement('div');cb.className='code-block';cb.textContent=code;
+        bub.appendChild(hdr);bub.appendChild(cb);
+      } else if(p.trim()){
+        var sp=document.createElement('div');sp.textContent=p;bub.appendChild(sp);
+      }
+    });
+    // アクションボタン
+    if(content.includes('[FORGE_SEND]')||content.includes('forge.html')||currentMode==='code'){
+      var b1=document.createElement('button');b1.className='bubble-action';b1.textContent='⚡ FORGEに送る';
+      b1.onclick=function(){sendToForge(content);};bub.appendChild(b1);
+    }
+    if(content.includes('function ')||content.includes('const ')||content.includes('calculate')){
+      var b2=document.createElement('button');b2.className='bubble-action';b2.textContent='📐 CALC ENGINEでテスト';
+      b2.onclick=function(){sendToCalc(content);};bub.appendChild(b2);
+    }
+    if(content.includes('[ERROR_SEND]')||currentMode==='debug'){
+      var b3=document.createElement('button');b3.className='bubble-action';b3.textContent='🔬 ERROR LABで修正';
+      b3.onclick=function(){sendToErrorLab(content);};bub.appendChild(b3);
+    }
+  } else {
+    bub.textContent=content;
+  }
+  row.appendChild(av);row.appendChild(bub);
+  el.appendChild(row);el.scrollTop=el.scrollHeight;
+}
+
+function addTyping(){
+  var el=document.getElementById('msgs');
+  var row=document.createElement('div');row.id='typing-row';row.className='msg-row';
+  row.innerHTML='<div class="avatar">NEO</div><div class="bubble ai"><div class="typing"><div class="td"></div><div class="td"></div><div class="td"></div></div></div>';
+  el.appendChild(row);el.scrollTop=el.scrollHeight;
+}
+function removeTyping(){var r=document.getElementById('typing-row');if(r)r.remove();}
+
+// 送信
+function doSend(){
+  var inp=document.getElementById('inp');
+  var text=inp.value.trim();if(!text)return;
+  inp.value='';inp.style.height='auto';
+  sendMsg(text);
+}
+function quickSend(text){sendMsg(text);}
+
+async function sendMsg(text){
+  addMsg('user',text);
+  chatHistory.push({role:'user',content:text});
+  addTyping();
+  document.getElementById('send-btn').disabled=true;
+  var hist=chatHistory.slice(-6).map(function(m){return (m.role==='user'?'USER:':'NEO:')+m.content.slice(0,300);}).join('\n');
+  var ctx=buildContextStr();
+  var prompt=hist+'\nNEO:'+ctx;
+  try{
+    var reply=await callAI(prompt,MODE_PROMPTS[currentMode]);
+    removeTyping();
+    chatHistory.push({role:'assistant',content:reply});
+    addMsg('ai',reply);
+  }catch(e){
+    removeTyping();
+    addMsg('ai','ERROR: '+e.message.slice(0,50));
+  }
+  document.getElementById('send-btn').disabled=false;
+  updateContext();
+}
+
+// 連携
+function sendToForge(content){
+  var match=content.match(/```[\s\S]*?```/);
+  var instruction=match?match[0].replace(/```\w*\n?/,'').replace(/```/,'').trim():content.replace('[FORGE_SEND]','').trim();
+  localStorage.setItem('forge_neo_instruction',instruction);
+  showToast('FORGEに送信。FORGEを開いてください。');
+  setTimeout(function(){window.open('forge.html','_blank');},500);
+}
+function sendToCalc(content){
+  var match=content.match(/```[\s\S]*?```/);
+  var code=match?match[0].replace(/```\w*\n?/,'').replace(/```/,'').trim():content;
+  localStorage.setItem('calc_engine_code',code);
+  showToast('CALC ENGINEに送信しました。');
+  setTimeout(function(){window.open('calc-engine.html','_blank');},500);
+}
+function sendToErrorLab(content){
+  localStorage.setItem('error_lab_code',content);
+  showToast('ERROR LABに送信しました。');
+  setTimeout(function(){window.open('error-lab.html','_blank');},500);
+}
+
+// 初期化
+(function(){
+  updateContext();
+  renderQuickBtns();
+  // pending
+  var pending=localStorage.getItem('neo_pending_instruction');
+  if(pending){localStorage.removeItem('neo_pending_instruction');sendMsg(pending);return;}
+  var calcPending=localStorage.getItem('calc_engine_code');
+  var forgeTitle=localStorage.getItem('FORGE_TITLE')||'';
+  var forgeHtml=localStorage.getItem('FORGE_CURRENT_HTML')||'';
+  var greeting='SYSTEM ONLINE.\n';
+  if(forgeHtml) greeting+=forgeTitle?'FORGE: ['+forgeTitle+'] 読み込み済み。':'FORGE: コード読み込み済み。';
+  else greeting+='CONTEXT: なし。コードを貼り付けるか質問してください。';
+  addMsg('ai',greeting);
+})();
+</script>
+</body>
+</html>
